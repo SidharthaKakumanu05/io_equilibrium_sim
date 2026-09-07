@@ -1,19 +1,21 @@
 """Connectivity, ported from CbmSim's microzone.
 
-Population sizes and connection counts are CbmSim's own
-(`src/cbm_state/connectivityparams.cpp`), and the wiring algorithms follow
-`MZoneConnectivityState` rather than being re-derived:
+Connection counts are CbmSim's own (`src/cbm_state/connectivityparams.cpp`) and
+the wiring algorithms follow `MZoneConnectivityState` rather than being
+re-derived. What is scaled is the three POPULATION sizes, 10x; what is not
+scaled is per-cell convergence, which is the quantity that sets each cell's
+synaptic load and therefore its operating point:
 
     CbmSim                          here          meaning
-    num_pc            32            n_pkj         Purkinje cells
-    num_nc             8            n_dcn         deep nuclear cells
-    num_io             4            n_io          inferior olive
-    num_p_nc_from_pc_to_nc  12      n_pkj_per_dcn PKJ converging on one DCN
-    num_p_pc_from_pc_to_nc   3      n_dcn_per_pkj DCN reached by one PKJ
-    num_p_io_from_nc_to_io   8      n_dcn_per_io  DCN converging on one IO
-    num_p_io_from_io_to_pc   8      n_pkj_per_io  PKJ contacted by one CF
-    num_p_io_in_io_to_io     3      (gap matrix)  IO-IO coupling partners
-    num_p_gr_to_pc       32768      n_pf_per_pkj  PF onto one PKJ  -- SCALED DOWN
+    num_pc            32            n_pkj  = 320  Purkinje cells          (x10)
+    num_nc             8            n_dcn  =  80  deep nuclear cells      (x10)
+    num_io             4            n_io   =  40  inferior olive          (x10)
+    num_p_nc_from_pc_to_nc  12      n_pkj_per_dcn = 12   PKJ converging on one DCN
+    num_p_pc_from_pc_to_nc   3      n_dcn_per_pkj =  3   DCN reached by one PKJ
+    num_p_io_from_nc_to_io   8      n_dcn_per_io  =  8   DCN converging on one IO
+    num_p_io_from_io_to_pc   8      n_pkj_per_io  =  8   PKJ contacted by one CF
+    num_p_io_in_io_to_io     3      (gap matrix)  =  4   IO-IO coupling partners
+    num_p_gr_to_pc       32768      n_pf_per_pkj  = 500  PF onto one PKJ -- SCALED DOWN
 
 The only quantity not taken literally is the granule input: CbmSim gives each
 Purkinje cell 32,768 of a million shared granule cells, and this MVP gives it a
@@ -22,26 +24,32 @@ own simplification -- private pools keep each Purkinje cell's coincidence
 detection independent, which is what H2 is about -- and it is the one place this
 module departs from the reference.
 
-The counts are mutually consistent: 32 PKJ x 3 targets = 96 = 8 DCN x 12 inputs,
-and 4 < 8 < 32 satisfies the white paper's N_IO << N_DCN << N_PKJ ordering
-without needing any assumption the paper does not state.
+The counts stay mutually consistent at this scale (320 PKJ x 3 targets = 960 =
+80 DCN x 12 inputs), and 40 < 80 < 320 satisfies the white paper's
+N_IO << N_DCN << N_PKJ ordering without needing any assumption the paper does
+not state.
 
-**On the closed-loop constraint.** CbmSim wires DCN->IO as a complete bipartite
-projection: every nuclear cell inhibits every olivary cell (`connectNCtoIO`
-assigns `pIOfromNCtoIO[i][j] = j`). Every Purkinje cell therefore influences
-every IO, so spec section 2.2(2) holds trivially and 2.2(1) -- "an IO may only be
-modulated by DCN modulated by exactly the PKJ its own CF contacts" -- cannot hold
-at all. There is no rewiring of this microzone that opens the loop, because there
-are no separable groups to rotate; opening it means cutting DCN->IO outright.
-`enforce_closed_loop` is kept and honoured where it can be (it rotates the
-DCN->IO block when `n_dcn_per_io < n_dcn`), but at CbmSim's default of
-`n_dcn_per_io = n_dcn` there is nothing for it to rotate, and it says so.
+**DCN->IO stops being complete, and that is the important consequence.** At
+CbmSim's own scale, 8 nuclear cells converging on each olivary cell IS the whole
+nucleus: `connectNCtoIO` is complete bipartite (`pIOfromNCtoIO[i][j] = j`), so
+every olivary cell sees identical inhibition. Combined with identical parameters
+and no noise, that made the four cells integrate to bit-identical traces -- one
+cell computed four times, with the gap junctions acting on a difference that was
+identically zero. Holding `n_dcn_per_io` at 8 while the nucleus grows to 80
+makes the projection topographic instead (`_connect_dcn_to_io` below): each
+olivary cell reads a contiguous block of the nucleus whose start advances with
+its index, so neighbours share 6 of 8 inputs and distant cells share none. The
+cells now diverge on their own; `tests/test_network_graph.py` asserts all n_io
+inhibition patterns are distinct so the degeneracy cannot return unnoticed.
+
+It also makes `enforce_closed_loop` meaningful. Rotating which block of the
+nucleus an olivary cell reads misroutes the feedback without cutting DCN->IO
+outright -- at CbmSim's complete projection there was nothing to rotate, and
+build_connectivity says so in `meta["loop"]`.
 """
 from dataclasses import dataclass, field
 
 import numpy as np
-
-CELL_KINDS = ("PF", "PKJ", "DCN", "IO")     # ordered coarse-to-fine along the pathway
 
 
 @dataclass
@@ -160,14 +168,15 @@ def _connect_pkj_to_dcn(n_pkj, n_dcn, n_pkj_per_dcn, n_dcn_per_pkj, rng):
 
 
 def _connect_dcn_to_io(n_dcn, n_io, n_dcn_per_io, enforce_closed_loop):
-    """CbmSim's `connectNCtoIO`, which is complete bipartite: every nuclear cell
-    inhibits every olivary cell. `n_dcn_per_io < n_dcn` gives each IO a contiguous
-    topographic block instead, and `enforce_closed_loop=False` then rotates which
-    block -- the only way this projection can be opened at all.
+    """DCN -> IO, generalizing CbmSim's `connectNCtoIO`.
 
-    The complete case makes every olivary cell see identical inhibition, which
-    (with identical parameters and no noise) makes them the same cell repeated;
-    the incomplete case is what breaks that degeneracy. See the README."""
+    CbmSim's version is complete bipartite, which is what `n_dcn_per_io >= n_dcn`
+    reproduces exactly. The shipped configuration has `n_dcn_per_io` (8) well
+    below `n_dcn` (80), so each olivary cell instead reads a contiguous
+    topographic block of the nucleus. `enforce_closed_loop=False` rotates which
+    block, which is the only way this projection can be opened short of cutting
+    it (see `SimConfig.ablate_dcn_io` for the outright cut). The module
+    docstring explains why the incomplete case matters."""
     targets_of_dcn = [[] for _ in range(n_dcn)]
     complete = n_dcn_per_io >= n_dcn
     for i in range(n_io):

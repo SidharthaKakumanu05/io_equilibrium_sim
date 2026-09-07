@@ -124,10 +124,11 @@ class SimConfig(_StrictParams):
     duration_s: float = 60.0          # default run length if Simulation.run() isn't given one
 
     # --- population sizes and connectivity (CbmSim's microzone; see sim/connectivity.py) ---
-    # Counts and connection numbers are CbmSim's own, from src/cbm_state/connectivityparams.cpp.
-    # They are mutually consistent (32 PKJ x 3 targets = 96 = 8 DCN x 12 inputs) and they satisfy
-    # the white paper's N_IO << N_DCN << N_PKJ ordering (4 < 8 < 32) without needing any assumption
-    # the paper does not state.
+    # Connection numbers are CbmSim's own, from src/cbm_state/connectivityparams.cpp; the three
+    # POPULATION sizes are those numbers scaled up 10x, while per-cell convergence is not scaled at
+    # all. The counts stay mutually consistent at this scale (320 PKJ x 3 targets = 960 = 80 DCN x
+    # 12 inputs) and they satisfy the white paper's N_IO << N_DCN << N_PKJ ordering (40 < 80 < 320)
+    # without needing any assumption the paper does not state.
     n_io: int = 40                    # CbmSim num_io (4) x10
     n_dcn: int = 80                   # CbmSim num_nc (8) x10
     n_pkj_per_io: int = 8             # CbmSim num_p_io_from_io_to_pc -- PKJ per climbing fiber.
@@ -182,13 +183,14 @@ class SimConfig(_StrictParams):
 
     # --- PKJ / DCN baseline rates (what each cell fires at with no synaptic input) ---
     pkj_baseline_hz: float = 50.0     # PKJ tonic rate before PF excitation / CF pause
-    dcn_baseline_hz: float = 60.0     # DCN tonic rate before PKJ inhibition. Higher than the rate model's 45 Hz:
-                                      # a LIF driven only just above rheobase has a near-vertical f-I curve, so the
-                                      # DCN could not sit at its ~15 Hz operating point *and* respond gradually to
-                                      # PKJ. Driving it above rheobase and inhibiting it back down puts the operating
-                                      # point on a gentler part of the curve. Lower is gentler: 60/70/80/90 Hz were
-                                      # compared and gave DCN-vs-PKJ slopes of -0.66/-0.78/-0.87/-0.95 Hz per Hz, so the
-                                      # lowest of those was taken. See experiments/run_calibration.py.
+    dcn_baseline_hz: float = 60.0     # DCN tonic rate BEFORE PKJ inhibition, so well above the ~15 Hz it actually
+                                      # runs at in the loop. Deliberately so: a LIF sitting only just above rheobase
+                                      # has a near-vertical f-I curve, and the nucleus could not both sit at 15 Hz and
+                                      # respond gradually to PKJ. Driving it high and inhibiting it back down puts the
+                                      # operating point on a gentler part of the curve, which is what the feedback limb
+                                      # needs. Lower is gentler: 60/70/80/90 Hz give DCN-vs-PKJ slopes of
+                                      # -0.66/-0.78/-0.87/-0.95 Hz per Hz, so the lowest was taken.
+                                      # See experiments/run_calibration.py stage 2.
 
     # --- synaptic reversal potentials and time constants ---
     e_exc_mv: float = 0.0             # AMPA-like (PF -> PKJ)
@@ -197,8 +199,9 @@ class SimConfig(_StrictParams):
     tau_pkj_dcn_ms: float = 10.0      # PKJ -> DCN inhibitory conductance decay
     tau_dcn_io_ms: float = 50.0       # DCN -> IO inhibitory conductance decay, matching the olivary glomerulus'
                                       # slow GABA response. Deliberately NOT made longer: a longer tau averages the
-                                      # few DCN inputs into a steadier conductance, which pushes the IO back onto the
-                                      # near-vertical part of its constant-conductance response. See dcn_io_gaba_gain.
+                                      # 8 converging DCN inputs into a steadier conductance, which pushes the IO back
+                                      # toward the near-vertical constant-conductance response it cannot regulate
+                                      # against. See dcn_io_gaba_gain for that curve and why it matters.
 
     # --- IO conductance model (sim/io_channels.py IOPopulation) ---
     io_channels: "IOChannelParams" = field(default_factory=lambda: IOChannelParams())  # ionic parameters; see above
@@ -228,27 +231,40 @@ class SimConfig(_StrictParams):
     pkj_dcn_fitted_at_n_pkj: int = 8      # pkj_dcn_gain was fitted with 8 PKJ converging on each DCN
     dcn_io_fitted_at_n_dcn: int = 2       # dcn_io_gaba_gain was fitted with 2 DCN converging on each IO
     pf_pkj_gain: float = 0.000137     # PKJ excitatory conductance (1/ms) added per unit of (weight * PF spike).
-                                      # Fitted so PKJ runs 50 Hz at weight 0 and 70 Hz at weight 1 -- the same span
-                                      # the superseded rate model produced, so the weight range still means the same thing.
+                                      # Fitted so PKJ runs 50 Hz at weight 0 and 70 Hz at weight 1. It is the SPAN
+                                      # that matters: the loop has to be able to push the Purkinje rate in both
+                                      # directions from w_init = 0.5, or the weights would have nowhere to settle.
     pkj_dcn_gain: float = 0.007717    # DCN inhibitory conductance (1/ms) added per presynaptic PKJ spike.
                                       # Fitted so DCN sits at 15 Hz when the 12 PKJ converging on it (CbmSim's
                                       # num_p_nc_from_pc_to_nc) fire at 60 Hz, i.e. at weight 0.5.
                                       # Scaled by pkj_dcn_fitted_at_n_pkj / n_pkj_per_dcn in sim/simulate.py.
     dcn_io_gaba_gain: float = 0.0974  # IO GABA_A conductance (mS/cm^2) added per presynaptic DCN spike. Fitted so the
-                                      # IO fires 1 Hz at DCN = 15 Hz, with CbmSim's 8 nuclear cells converging on
-                                      # each olivary cell. Re-fitted whenever that convergence or the olive's noise
-                                      # changes: 0.68 (2 DCN, with membrane noise), 0.273 (2 DCN, noiseless),
-                                      # 0.0974 (8 DCN, noiseless). Each step needs less inhibition per synapse, for
-                                      # the same reason -- more converging cells deliver a steadier conductance, and
-                                      # a steadier conductance suppresses the olive more effectively. See the
-                                      # graininess note below.
-                                      # The whole reason this is a spike-driven synapse rather than a scalar: with
-                                      # noise off and the conductance HELD CONSTANT, the olive fires 3.00 Hz at g = 0
-                                      # and is silent at every g >= 0.10 -- an all-or-nothing limb with no usable
-                                      # range. Delivered as discrete DCN events the same averages give 2.33 Hz at
-                                      # g = 0.14, 1.00 at 0.42 and 0.07 at 0.84: smooth, monotone and gradeable.
-                                      # The loop's negative feedback exists only because of that fluctuation.
-                                      # See results/io_transfer_curve.png.
+                                      # IO fires 1 Hz at DCN = 15 Hz, with CbmSim's 8 nuclear cells converging on each
+                                      # olivary cell. It has been re-fitted twice, and the sequence is informative:
+                                      # 0.68 (2 DCN converging, with membrane noise), 0.273 (2 DCN, noiseless), 0.0974
+                                      # (8 DCN, noiseless). Each step needs LESS inhibition per synapse, for the same
+                                      # underlying reason -- more converging cells, and less membrane noise, both make
+                                      # the conductance the cell sees steadier, and a steadier conductance suppresses
+                                      # the olive more effectively. Re-run experiments/run_calibration.py after
+                                      # changing either; it reads the live config, so it re-derives rather than going
+                                      # stale.
+                                      #
+                                      # WHY THIS IS A SPIKE-DRIVEN SYNAPSE AND NOT A SCALAR. With noise off and the
+                                      # conductance HELD CONSTANT, the olive fires 3.00 Hz at g = 0 and is silent at
+                                      # every g >= 0.10 mS/cm^2. There is no graded range at all -- steady inhibition
+                                      # either leaves the rhythm untouched or abolishes it, so a loop cannot regulate
+                                      # against it. Delivered as discrete DCN events the same means give a smooth
+                                      # monotone curve: 2.73 Hz at mean g = 0.029, 2.09 at 0.088, 1.05 at 0.147 (the
+                                      # loop's operating point), 0.21 at 0.207, 0.01 at 0.297. The cell escapes during
+                                      # the troughs of a conductance that swings around its mean, and the loop's
+                                      # entire negative-feedback limb is that fluctuation. Both curves are plotted on
+                                      # one axis by experiments/run_io_characterization.py.
+                                      #
+                                      # A corollary worth knowing before changing n_dcn_per_io or tau_dcn_io_ms:
+                                      # anything that makes the inhibition SMOOTHER (more converging cells, a longer
+                                      # tau) narrows the usable limb back toward that cliff. There is an upper bound
+                                      # on nucleo-olivary convergence beyond which the loop cannot regulate itself
+                                      # without some other noise source -- which is a real prediction of the model.
 
     # --- CF -> PKJ inhibitory pause ---
     cf_pause_g: float = 1.0           # inhibitory conductance (1/ms) switched on during the pause -- large enough
@@ -267,15 +283,21 @@ class SimConfig(_StrictParams):
     delta_minus: float = 0.009        # LTD decrement
 
     # --- closed-loop connectivity ---
-    enforce_closed_loop: bool = True  # False: rotate DCN->IO feedback across groups (needs n_io >= 2)
+    enforce_closed_loop: bool = True  # False rotates each olivary cell's block of the nucleus by a full block width,
+                                      # so it is inhibited by nuclear cells its own climbing fiber does not drive --
+                                      # the feedback is misrouted rather than removed. Needs n_dcn_per_io < n_dcn to
+                                      # mean anything (at CbmSim's complete projection there is nothing to rotate,
+                                      # and build_connectivity reports that in meta["loop"]). For removing the limb
+                                      # outright, see ablate_dcn_io above.
 
     # --- recording ---
     record_every_ms: float = 10.0     # cadence for the slow traces (mean weight, tracked synapses)
     trace_window_s: float = 3.0       # length of the high-resolution membrane-potential window, taken at the END
                                       # of the run. V is sampled every dt there; sampling it at record_every_ms
                                       # for the whole run would alias every spike and every Ca2+ spike away.
-    n_pf_recorded: int = 40           # PF units whose spike trains are kept for the raster. All 32,000 fibers at 20 Hz
-                                      # would be ~38M spike times over the default 60 s run, for a raster no one can read.
+    n_pf_recorded: int = 40           # PF units whose spike trains are kept for the raster. All 160,000 fibers
+                                      # (320 PKJ x 500) at 20 Hz would be ~190M spike times over the default 60 s
+                                      # run, for a raster no one could read.
     n_tracked_synapses: int = 15      # individual PF->PKJ synapses logged alongside the mean weight
 
     # --- misc ---

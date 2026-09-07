@@ -1,24 +1,26 @@
-"""Aggregate sweep sidecars into replicated tables and figures.
+"""Aggregate sweep sidecars into replicated tables. Writes results/SWEEP_RESULTS.md.
 
 Every row is mean +/- SD across seeds, because a single run is one draw from a
-distribution and the whole point of the sweep was to stop reporting n=1.
-Reads only results/sweeps/**.json, so it can be re-run any time without
-touching the simulation.
+distribution and the point of the sweep is to stop reporting n=1. It reads only
+results/sweeps/**.json, never the simulation, so it is instant and can be re-run
+against a partial sweep -- experiments still in flight simply show fewer seeds
+in their `n` column.
 
-    python experiments/analyze_sweeps.py            # everything available
-    python experiments/analyze_sweeps.py open_loop  # one experiment
+    python experiments/analyze_sweeps.py            # every experiment with sidecars
+    python experiments/analyze_sweeps.py open_loop  # just one
+
+`experiments/figures.py` is the graphical counterpart, reading the same sidecars
+plus the .npz raw trajectories.
 """
 import argparse
 import collections
 import json
 import pathlib
-import sys
 
 import numpy as np
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SWEEPS = ROOT / "results" / "sweeps"
-FIGS = ROOT / "results"
 
 
 def load(experiment=None):
@@ -42,6 +44,9 @@ def group(recs, keys):
 
 
 def stat(rows, metric):
+    """(mean, sample SD, n) of one metric across a bucket, skipping runs where it
+    is missing or non-finite -- a very short run has no defined ISI CV, and a run
+    that silenced the olive has no defined synchrony."""
     v = np.array([r["metrics"][metric] for r in rows
                   if r["metrics"].get(metric) is not None
                   and np.isfinite(r["metrics"][metric])], dtype=float)
@@ -150,9 +155,13 @@ def vm_distance_profile(recs):
 
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("experiment", nargs="?", default=None)
-    ap.add_argument("--out", type=str, default=str(ROOT / "results" / "SWEEP_RESULTS.md"))
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("experiment", nargs="?", default=None,
+                    help=f"restrict the report to one experiment. "
+                         f"Known: {', '.join(REPORTS)} (default: all of them)")
+    ap.add_argument("--out", type=str, default=str(ROOT / "results" / "SWEEP_RESULTS.md"),
+                    help="markdown file to write (default: results/SWEEP_RESULTS.md)")
     args = ap.parse_args()
 
     parts = ["# Sweep results\n",
@@ -175,7 +184,9 @@ def main():
             parts.append(vm_distance_profile(recs))
 
     text = "\n".join(parts)
-    pathlib.Path(args.out).write_text(text)
+    out_path = pathlib.Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)     # results/ is gitignored, so it may not exist yet
+    out_path.write_text(text)
     print(text)
     print(f"\n[written to {args.out}]")
 

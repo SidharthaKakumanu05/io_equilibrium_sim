@@ -57,6 +57,14 @@ class TestTwoWindowPlasticity(unittest.TestCase):
         run_single_spike_then_cf(plasticity, weights, cf_delay=6)  # one step past the window
         self.assertAlmostEqual(weights[0, 0], self.w_init + self.delta_plus, places=9)
 
+    def test_cf_in_the_same_timestep_as_the_spike_potentiates(self):
+        """Delay 0 is BEFORE the window, not inside it: the rule is about a CF that
+        FOLLOWS a PF spike. `step` folds this step's CF into the cumulative counters
+        before recording them, so a simultaneous CF reads as already-past."""
+        plasticity, weights = self._new()
+        run_single_spike_then_cf(plasticity, weights, cf_delay=0)
+        self.assertAlmostEqual(weights[0, 0], self.w_init + self.delta_plus, places=9)
+
     def test_ltp_applied_when_no_cf_at_all(self):
         plasticity, weights = self._new()
         run_single_spike_then_cf(plasticity, weights, cf_delay=None)

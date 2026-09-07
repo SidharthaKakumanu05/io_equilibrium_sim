@@ -1,8 +1,10 @@
 """Conductance-based inferior-olive neuron.
 
-Replaces a single constant `intrinsic_drive` (a made-up depolarizing pull in
-arbitrary "V-units") with the ionic currents that actually generate olivary
-rhythmicity and climbing-fiber output:
+The olive is the one cell type here that is not an integrate-and-fire
+abstraction: climbing-fiber output has to be *generated* by the cell's own
+currents, because H1 is a claim about a self-paced oscillator being held at a
+rate by inhibition, and an integrator with an imposed drive would assume the
+answer. The currents:
 
   I_CaL   low-threshold ("T-type") Ca2+ -- k^3*l gating. Inactivated at rest,
           de-inactivates when hyperpolarized, then produces the regenerative
@@ -188,13 +190,20 @@ class IOPopulation:
     would blow up on the fast I_CaL activation. The outer simulation still runs
     at cfg.dt_ms (1 ms); this class silently substeps inside each call.
 
-    Spontaneous CF firing is *stochastic*, not a deterministic limit cycle. The
-    ionic machinery produces a continuous subthreshold oscillation at a few Hz;
-    an Ornstein-Uhlenbeck noise current (standing in for synaptic bombardment
-    and channel noise) determines which oscillation peaks actually reach Ca2+
-    spike threshold. That is both what olivary cells do in vivo -- STO at 1-10
-    Hz, CF output near 1 Hz -- and what makes CF rate a smooth, monotone
-    function of DCN inhibition instead of a phase-locking staircase.
+    Spontaneous firing is deterministic by default. The ionic machinery is a
+    self-sustaining oscillator: with `i_app = 0` and `noise_sigma = 0` -- both
+    the shipped values -- the cell free-runs at 3.00 Hz on I_CaL / I_KCa / I_h
+    alone, and blocking I_CaL leaves it silent at -62.6 mV. Nothing pushes it.
+
+    An Ornstein-Uhlenbeck noise current is available (`noise_sigma > 0`,
+    standing in for synaptic bombardment and channel noise); it decides which
+    subthreshold-oscillation peaks reach Ca2+ spike threshold, which smooths how
+    steeply CF rate falls off with inhibition. It is off because the closed loop
+    does not need it: the inhibition arrives as a handful of discrete DCN events
+    rather than as a held conductance, and that granularity supplies the same
+    smoothing (see config.dcn_io_gaba_gain). Cell-to-cell variability is a
+    separate knob again -- `heterogeneity_cv` below, which diversifies the
+    population without adding noise inside any one cell.
 
     `g_gap` is an (N, N) symmetric matrix of gap-junction conductances
     (mS/cm^2, zero diagonal) or None for uncoupled cells. It enters the current

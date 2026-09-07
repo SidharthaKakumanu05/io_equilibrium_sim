@@ -57,8 +57,9 @@ def _draw_nodes(ax, graph, kinds, legend=True):
 def _style_axes(ax, graph, title, aspect=None, pad=0.5):
     """Fit the axes to the drawn nodes. `aspect` defaults to the data's own
     proportions (with a floor, so a nearly-planar subgraph does not collapse to
-    a line) rather than a fixed cube -- one group occupies a narrow radial
-    wedge, and forcing that into a cube renders it as a diagonal streak."""
+    a line) rather than a fixed cube -- one climbing-fiber territory occupies a
+    narrow radial wedge, and forcing that into a cube renders it as a diagonal
+    streak."""
     p = graph.position
     lo, hi = p.min(axis=0) - pad, p.max(axis=0) + pad
     ax.set_xlim(lo[0], hi[0]); ax.set_ylim(lo[1], hi[1]); ax.set_zlim(lo[2], hi[2])
@@ -75,9 +76,16 @@ def _style_axes(ax, graph, title, aspect=None, pad=0.5):
 
 
 def _subgraph_local_frame(graph, group):
-    """One group's nodes and the edges between them, with positions re-projected
-    onto that group's own frame: x becomes the tangential offset within the
-    group, y is flattened, z stays the anatomical height."""
+    """One climbing-fiber territory's nodes and the edges among them, with
+    positions re-projected onto that territory's own frame: x becomes the
+    tangential offset within it, y is flattened, z stays the anatomical height.
+
+    `group` selects PF and PKJ by climbing fiber and DCN/IO by index, so this is
+    territory `g` plus nuclear cell `g` and olivary cell `g` -- one representative
+    path around the loop, not a separable module. The circuit has no separable
+    modules: the nuclear cells that inhibit an olivary cell are driven by Purkinje
+    cells from several territories, which is exactly the closed-loop violation
+    quantified in the README."""
     keep = np.flatnonzero(graph.group == group)
     mask = np.isin(graph.edge_src, keep) & np.isin(graph.edge_dst, keep)
     n_groups = int(graph.meta.get("n_io", graph.group.max() + 1))
@@ -94,14 +102,15 @@ def _subgraph_local_frame(graph, group):
 
 
 def plot_network_3d(graph, path, title="Network wiring", elev=18, azim=-62):
-    """Three views of the same wired network: the whole thing, one closed-loop
-    group in isolation, and the olive's gap-junction web on its own.
+    """Three views of the same wired network: the whole thing, one
+    climbing-fiber territory's path around the loop, and the olive's
+    gap-junction web on its own.
 
     Layers run bottom-to-top in the order signals traverse the loop back to the
     olive -- IO at the base, then DCN, then the Purkinje layer, then the
-    parallel fibers -- and the groups fan out radially, so one closed loop reads
-    as a vertical column and the electrical coupling reads as the horizontal web
-    underneath everything.
+    parallel fibers -- and territories fan out radially, so one path around the
+    loop reads as a vertical column and the electrical coupling reads as the
+    horizontal web underneath everything.
     """
     plt = _mpl()
     from mpl_toolkits.mplot3d import art3d
@@ -117,16 +126,16 @@ def plot_network_3d(graph, path, title="Network wiring", elev=18, azim=-62):
     ax.view_init(elev=elev, azim=azim)
     ax.legend(loc="upper left", fontsize=7, framealpha=0.9)
 
-    # --- panel 2: one group, redrawn in its own local frame so the loop is legible ---
-    # In the global layout the layers sit at increasing radius, so a single group is a diagonal
-    # wedge -- fine in panel 1, where the cone shows every group converging on the olive, but it
-    # renders one group as a streak. Re-projecting onto (tangential offset, 0, height) turns that
-    # group into the vertical column the pathway actually is.
+    # --- panel 2: one territory, redrawn in its own local frame so the loop is legible ---
+    # In the global layout the layers sit at increasing radius, so a single territory is a diagonal
+    # wedge -- fine in panel 1, where the cone shows every territory converging on the olive, but
+    # it renders one of them as a streak. Re-projecting onto (tangential offset, 0, height) turns
+    # it into the vertical column the pathway actually is.
     ax2 = fig.add_subplot(1, 3, 2, projection="3d")
     sub = _subgraph_local_frame(graph, group=0)
     _draw_edges(ax2, sub, ("pf_pkj", "io_pkj", "pkj_dcn", "dcn_io"), art3d)
     _draw_nodes(ax2, sub, all_kinds, legend=False)
-    _style_axes(ax2, sub, "one closed-loop group\nPF $\\to$ PKJ $\\dashv$ DCN $\\dashv$ IO $\\to$ CF back to PKJ",
+    _style_axes(ax2, sub, "one climbing-fiber territory\nPF $\\to$ PKJ $\\dashv$ DCN $\\dashv$ IO $\\to$ CF back to PKJ",
                  aspect=(0.62, 0.18, 1.0))
     ax2.view_init(elev=6, azim=-90)
     x_label = sub.position[:, 0].min() - 0.35
@@ -145,10 +154,10 @@ def plot_network_3d(graph, path, title="Network wiring", elev=18, azim=-62):
         ax3.add_collection3d(art3d.Line3DCollection(segs, colors=EDGE_STYLE["io_io"]["color"],
                                                      linewidths=widths, alpha=0.85))
     p = graph.position[io_ids]
-    # Marker and label density have to follow n_io. At CbmSim's 4 cells a fat marker reads
-    # well and every cell can be numbered; at 40 the same marker is wider than the spacing
-    # between neighbours, which hides exactly the short local chords a nearest_k topology is
-    # made of -- the panel then looks like an unconnected ring.
+    # Marker and label density have to follow n_io. At a handful of cells a fat marker reads well
+    # and every cell can be numbered; at the shipped 40 the same marker is wider than the spacing
+    # between neighbours, which hides exactly the short local chords a nearest_k topology is made
+    # of -- the panel would then look like an unconnected ring.
     n_io = len(io_ids)
     marker = float(np.clip(2600.0 / max(n_io, 1), 45.0, 260.0))
     ax3.scatter(p[:, 0], p[:, 1], p[:, 2], s=marker, c=NODE_STYLE["IO"]["color"],

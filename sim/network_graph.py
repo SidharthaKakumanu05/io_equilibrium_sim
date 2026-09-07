@@ -16,8 +16,10 @@ default scale, which is neither drawable nor a readable adjacency matrix. Every
 other cell is present in full.
 
 `group` on a node is its climbing-fiber territory for PF and PKJ, and the cell's
-own index for DCN and IO -- this connectivity has no separable groups, since every
-nuclear cell inhibits every olivary cell.
+own index for DCN and IO. Nuclear and olivary cells get no territory because
+they have none: PKJ->DCN and DCN->IO both overlap, so a nuclear cell is driven by
+Purkinje cells from several climbing-fiber territories and inhibits several
+olivary cells in turn.
 """
 from dataclasses import dataclass, field
 
@@ -36,9 +38,9 @@ EDGE_KINDS = {
 @dataclass
 class NetworkGraph:
     """Nodes are indexed 0..n_nodes-1 in PF, PKJ, DCN, IO order."""
-    kind: np.ndarray            # (N,) cell-type string per node
-    group: np.ndarray           # (N,) which closed-loop group the node belongs to
-    index: np.ndarray           # (N,) index within (kind, group)
+    kind: np.ndarray            # (N,) cell-type string per node: "PF" | "PKJ" | "DCN" | "IO"
+    group: np.ndarray           # (N,) climbing-fiber territory (PF/PKJ) or the cell's own index (DCN/IO)
+    index: np.ndarray           # (N,) index within its cell type
     position: np.ndarray        # (N, 3) x/y/z coordinates for drawing
     edge_src: np.ndarray        # (E,) source node id
     edge_dst: np.ndarray        # (E,) destination node id
@@ -122,13 +124,14 @@ def build_network_graph(cfg, conn, gap_matrix=None, weights=None, n_pf_per_pkj_s
     without it every PF edge is drawn at cfg.w_init. `gap_matrix` is the
     (n_io, n_io) coupling matrix from sim/io_coupling.py.
 
-    Layout is anatomical in spirit: the olive sits at the bottom as a tight
-    cluster (it is one nucleus, electrically coupled across the population), the
-    nuclei above it, the Purkinje layer above that, and the parallel fibers on
-    top. Purkinje cells fan out by climbing-fiber territory, so each olivary
-    cell's eight targets sit together; nuclear cells sit on their own ring,
-    because in this connectivity they are shared across the whole microzone
-    rather than belonging to any one territory.
+    Layout is anatomical in spirit and has no effect on anything simulated --
+    nothing in the dynamics reads a position, and no connection depends on
+    distance. The olive sits at the bottom as a tight ring (it is one nucleus,
+    electrically coupled across the population), the nuclei above it, the
+    Purkinje layer above that, and the parallel fibers on top. Purkinje cells fan
+    out by climbing-fiber territory, so each olivary cell's eight targets sit
+    together; nuclear cells get their own ring, since they are shared across
+    territories rather than belonging to one.
     """
     rng = np.random.default_rng(seed)
     n_io, n_dcn, n_pkj = conn.n_io, conn.n_dcn, conn.n_pkj

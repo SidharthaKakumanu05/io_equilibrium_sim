@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Experiment 5: characterize the conductance-based IO neuron (sim/io_channels.py).
+"""Characterize the conductance-based IO neuron (sim/io_channels.py), alone.
 
-Four protocols, none of which involve the rest of the circuit -- this script
-exists to show that the ionic model behaves like an olivary cell before it is
-trusted to drive the closed loop:
+Four protocols, none of which involve the rest of the circuit. The point is to
+establish that the ionic model behaves like an olivary cell BEFORE it is trusted
+to drive the closed loop -- H1 is a claim about a self-paced oscillator held at a
+rate by inhibition, and it means nothing if the oscillator is an artifact:
 
   1. traces      -- V and [Ca]i, free-running vs. under the DCN inhibition the
                     closed loop actually delivers (as spikes, not a held conductance).
@@ -14,8 +15,21 @@ trusted to drive the closed loop:
                     low-threshold Ca2+ spike that would never fire from rest.
   4. transfer    -- CF rate vs. DCN GABA_A conductance, the loop's feedback limb,
                     measured both with the conductance held constant and with it
-                    driven by DCN spikes. Those are different curves, and the
-                    difference is why the loop works: see the plot's caption.
+                    driven by DCN spikes. These are different curves and the
+                    difference is the result: held constant the response is a
+                    cliff (3 Hz at g = 0, silent by g = 0.10) that no loop could
+                    regulate against; delivered as discrete DCN events the same
+                    means give a smooth monotone slope. Monotonicity is what H1's
+                    equilibrium argument rests on, and tests/test_io_channels.py
+                    asserts it.
+
+This is the slowest script here for its size: it drives ONE cell (pooled over
+N_POOL identical copies) for a long time at each of ~30 conditions, and the IO's
+0.1 ms substepping is where nearly all the project's compute goes. Budget
+several minutes, and use --transfer-duration-s to trade precision for time.
+
+Writes results/io_traces.png, io_channel_ablation.png, io_rebound.png and
+io_transfer_curve.png.
 """
 import argparse
 import dataclasses
@@ -53,7 +67,8 @@ class SpikeDrivenGaba:
 
     def g(self):
         """This millisecond's conductance, one value per cell. Each cell gets its
-        own independent DCN draw, exactly as each group's IO does in the network."""
+        own independent DCN draw, exactly as each olivary cell does in the network
+        (no two of them read the same block of the nucleus)."""
         arrived = (self.rng.random((self.n_cells, self.n_dcn)) < self.p).sum(axis=1)
         self._g += self.gain * arrived
         value = self._g.copy()
@@ -120,9 +135,10 @@ def cf_rate_spike_driven(cfg, params, dcn_rate_hz, duration_ms, seed=0, n=N_POOL
     return fired / n / (duration_ms / 1000.0), g_sum / steps
 
 
-# DCN's rate at the loop's operating point (mean weight w_init = 0.5, PKJ ~60 Hz). Since PKJ and DCN
-# became spiking cells there is no closed form for it, so it is the target experiments/run_calibration.py
-# fits pkj_dcn_gain against, and that script measures what the assembled circuit actually delivers.
+# DCN's rate at the loop's operating point. There is no closed form for it -- PKJ and DCN are spiking
+# cells -- so it is simply the target experiments/run_calibration.py fits pkj_dcn_gain against, and it
+# is what the assembled network is observed to deliver. Every conductance in this script is derived
+# from it, so changing it changes where the protocols probe, not what the cell does.
 DCN_RATE_AT_OPERATING_POINT_HZ = 15.0
 
 # IOChannelParams.noise_sigma is 0 by default, so the cell's rhythm is generated purely by its own
@@ -146,12 +162,17 @@ def operating_point_conductance(cfg, dcn_rate_hz=DCN_RATE_AT_OPERATING_POINT_HZ)
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out-dir", type=str, default="results")
-    parser.add_argument("--seed", type=int, default=0)
+    parser = argparse.ArgumentParser(description=__doc__,
+                                      formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--out-dir", type=str, default="results",
+                         help="directory the four PNGs are written to (default: results)")
+    parser.add_argument("--seed", type=int, default=0,
+                         help="seeds the surrogate DCN trains and any membrane noise (default: 0)")
     parser.add_argument("--transfer-duration-s", type=float, default=8.0,
-                         help="per-point run length for the rate/conductance curves. Each point pools "
-                              f"{N_POOL} cells, so this is {N_POOL}x that many cell-seconds of data")
+                         help=f"simulated seconds per point on the two rate/conductance curves. Each "
+                              f"point pools {N_POOL} identical uncoupled cells, so it is {N_POOL}x "
+                              f"that many cell-seconds of data. 26 points, and this is where the "
+                              f"script's runtime goes (default: 8)")
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir)

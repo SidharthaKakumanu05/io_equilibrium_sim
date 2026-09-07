@@ -1,15 +1,23 @@
 #!/usr/bin/env python3
-"""Experiment 3: delta+/delta- ratio sweep vs. LTD window length (H2).
+"""H2, the direct form: which delta-/delta+ ratio makes the weights stop drifting?
 
-NOT RE-VALIDATED since PKJ and DCN became spiking integrate-and-fire cells. It
-runs, and the analytical prediction it is compared against is unchanged (it
-depends only on the LTD window and the equilibrium CF interval, not on the
-membrane models), but the measured curve has not been re-checked against it
-under the new neuron models and re-fitted gains.
+H2 says the loop settles where LTD and LTP balance, at an inter-CF interval of
+`window x (1 + delta-/delta+)`. Turned around, a given LTD window has exactly one
+ratio at which the weights neither climb nor fall at 1 Hz, and it is
+`(1000 - window) / window` -- `sim.analysis.predicted_ltd_ltp_ratio`. This script
+measures that ratio instead of assuming it: for each LTD window it runs the loop
+at several candidate ratios, brackets the sign change in the weight-drift slope,
+and interpolates to zero.
 
-Pinned to a single closed-loop group: this experiment is about the plasticity
-rule, not the network, and it runs one simulation per candidate ratio per
-window -- dozens in all.
+That is one simulation per candidate ratio per window -- 18 by default, so
+budget accordingly (see --n-io). The replicated, full-scale version of H2 is
+`experiments/sweep.py h2_window`, which tests the same claim the other way
+round: fix the ratio, predict the rate, and check eight settings against
+prediction over ten seeds each. Prefer that one for a result to quote; this
+script is the cheap, direct check of the same relationship.
+
+Writes results/window_sweep_ratio_curve.png (drift vs. ratio at the first
+window) and results/window_sweep_ratio_vs_window.png (fitted vs. analytical).
 """
 import argparse
 import sys
@@ -24,9 +32,27 @@ from sim.analysis import plot_ratio_sweep, predicted_ltd_ltp_ratio, weight_drift
 from sim.simulate import Simulation
 
 
-def drift_slope_for_ratio(ltd_window_ms, ratio, delta_plus, duration_s, seed):
-    cfg = SimConfig(
-        n_io=1,                                                              # one group: this is a plasticity experiment
+def microzone(n_io, **overrides):
+    """A valid microzone scaled to `n_io` olivary cells.
+
+    The connection counts have to close, and that fixes everything else:
+    n_pkj = 8*n_io, and n_pkj * n_dcn_per_pkj == n_dcn * n_pkj_per_dcn forces
+    n_dcn = 2*n_io. n_dcn_per_io is capped at n_dcn, which at small n_io makes
+    DCN->IO complete -- CbmSim's own case, and harmless here: this experiment
+    measures the plasticity rule's balance point, which is a property of the
+    weights and the CF rate, not of how the olive's cells differ from each
+    other. sim/connectivity.py raises on any combination that does not close,
+    so a bad --n-io fails immediately rather than running something else."""
+    cfg = SimConfig(**overrides)
+    cfg.n_io = n_io
+    cfg.n_dcn = 2 * n_io
+    cfg.n_dcn_per_io = min(cfg.n_dcn_per_io, cfg.n_dcn)
+    return cfg
+
+
+def drift_slope_for_ratio(ltd_window_ms, ratio, delta_plus, duration_s, seed, n_io):
+    cfg = microzone(
+        n_io,
         duration_s=duration_s, seed=seed,
         ltd_window_ms=ltd_window_ms,
         delta_plus=delta_plus, delta_minus=delta_plus * ratio,               # delta_minus derived from the candidate ratio
@@ -34,8 +60,12 @@ def drift_slope_for_ratio(ltd_window_ms, ratio, delta_plus, duration_s, seed):
     return weight_drift_slope(Simulation(cfg).run())
 
 
-def find_zero_drift_ratio(ltd_window_ms, ratio_candidates, delta_plus, duration_s, seed):
-    slopes = [drift_slope_for_ratio(ltd_window_ms, r, delta_plus, duration_s, seed)
+def find_zero_drift_ratio(ltd_window_ms, ratio_candidates, delta_plus, duration_s, seed, n_io):
+    """Bracket the ratio at which the drift slope crosses zero, then interpolate.
+    Returns (ratio or None, slopes). None means no sign change was bracketed --
+    every candidate drifted the same way, so widen the candidate range or run
+    longer."""
+    slopes = [drift_slope_for_ratio(ltd_window_ms, r, delta_plus, duration_s, seed, n_io)
               for r in ratio_candidates]                                       # one run per candidate ratio
     zero_ratio = None
     for i in range(len(ratio_candidates) - 1):
@@ -51,14 +81,28 @@ def find_zero_drift_ratio(ltd_window_ms, ratio_candidates, delta_plus, duration_
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__,
+                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--windows", type=float, nargs="+", default=[50.0, 100.0, 200.0],
-                         help="LTD window lengths (ms) to sweep")
-    parser.add_argument("--n-ratios", type=int, default=6, help="ratio points per window")
-    parser.add_argument("--duration-s", type=float, default=30.0, help="sim duration per run (s)")
-    parser.add_argument("--delta-plus", type=float, default=0.001, help="fixed LTP magnitude")
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--out-dir", type=str, default="results")
+                         help="LTD window lengths (ms) to sweep; one fit per window "
+                              "(default: 50 100 200)")
+    parser.add_argument("--n-ratios", type=int, default=6,
+                         help="candidate ratios per window, spread from 0.2x to 2.2x the "
+                              "analytical prediction. One simulation each (default: 6)")
+    parser.add_argument("--duration-s", type=float, default=30.0,
+                         help="simulated seconds per candidate run. Short on purpose -- the drift "
+                              "SIGN is what gets bracketed, not the settled value (default: 30)")
+    parser.add_argument("--delta-plus", type=float, default=0.001,
+                         help="LTP increment, held fixed while delta_minus is varied (default: 0.001)")
+    parser.add_argument("--n-io", type=int, default=4,
+                         help="olivary cells; n_dcn follows as 2*n_io and the whole microzone "
+                              "scales with it. 4 is CbmSim's own size and keeps the default "
+                              "sweep to roughly half an hour; 40 is the shipped network and is "
+                              "about 10x that (default: 4)")
+    parser.add_argument("--seed", type=int, default=0,
+                         help="seeds the PF Poisson draws and the membrane noise (default: 0)")
+    parser.add_argument("--out-dir", type=str, default="results",
+                         help="directory the two PNGs are written to (default: results)")
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir)
@@ -74,7 +118,7 @@ def main():
         fractions = np.linspace(0.2, 2.2, args.n_ratios)                       # bracket the prediction on both sides
         candidates = sorted(set(max(0.05, round(predicted * f, 3)) for f in fractions))
         zero_ratio, slopes = find_zero_drift_ratio(w, candidates, args.delta_plus,
-                                                     args.duration_s, args.seed)
+                                                     args.duration_s, args.seed, args.n_io)
         empirical.append(zero_ratio)
         analytical.append(predicted)
         print(f"{w:>10.1f} {predicted:>17.3f} "

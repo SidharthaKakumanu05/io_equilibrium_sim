@@ -50,11 +50,13 @@ def build_gap_junction_matrix(n_io, g_gap, topology="all_to_all", n_neighbors=2,
     """Symmetric (n_io, n_io) coupling-conductance matrix, mS/cm^2, zero diagonal.
 
     g_gap is the conductance of a *single* junction, so a cell's total coupling
-    conductance is g_gap times its number of partners -- 7*g_gap under
-    `all_to_all` at n_io=8, 2*g_gap under `ring`. Compare that total against
-    IOChannelParams.g_leak (0.06 mS/cm^2) when choosing a value: coupling
-    comparable to leak is the physiological regime, coupling far above it
-    clamps the cells into a single unit.
+    conductance is g_gap times its number of partners: 2*g_gap on a ring,
+    2k*g_gap under nearest_k, (n-1)*g_gap all-to-all. That TOTAL is the
+    physiologically meaningful quantity, not g_gap -- compare it against
+    IOChannelParams.g_leak (0.06 mS/cm^2). Comparable to leak is the
+    physiological regime; far above it the cells are clamped into a single unit,
+    which is why all-to-all does not survive the scale-up to 40 cells (39
+    partners, ~12x leak) and the shipped topology is local instead.
 
     Topologies:
       all_to_all  every cell coupled to every other (CbmSim's connectIOtoIO).
@@ -68,13 +70,17 @@ def build_gap_junction_matrix(n_io, g_gap, topology="all_to_all", n_neighbors=2,
                   total conductance per cell are preserved on average, so this
                   buys synchrony with topology rather than with conductance.
 
-    Why small_world exists: on a plain ring, global synchrony is limited by path
-    length, not by conductance. Measured on the shipped 40-cell olive, directly
-    coupled pairs reach Vm r = +0.90 while pairs on opposite sides plateau at
-    +0.44 -- the local junctions are already near saturation and raising g_gap
-    has almost nothing left to give there. A few long-range junctions collapse
-    the ring's ~10-hop diameter to ~3 and lift the distant pairs instead, at the
-    same conductance cost per cell.
+    Why small_world exists: under every local topology, global synchrony is
+    limited by path length rather than by conductance. Measured on the shipped
+    40-cell olive at matched total conductance, directly coupled pairs reach
+    Vm r ~ +0.90 while pairs on opposite sides plateau near +0.39 -- the local
+    junctions are already close to saturation, so raising g_gap has almost
+    nothing left to give there. Shortening the paths does what raising the
+    conductance cannot: at n_io = 40 and k = 2 the graph diameters are 20 (ring),
+    10 (nearest_k), 6-8 (small_world at 15% rewiring, depending on `seed`) and
+    1 (all_to_all), and CF
+    synchrony follows that order rather than following g_gap. See the README's
+    topology table.
     """
     n = int(n_io)
     if n < 1:
@@ -146,8 +152,12 @@ def synchrony_index(spike_times_by_cell, t_start_ms, t_end_ms, bin_ms=20.0):
 
     Spike trains are binned, then the mean off-diagonal Pearson correlation
     across cell pairs is returned. 0 = independent cells, 1 = identical trains.
-    This is the quantity gap junctions are supposed to move, so it is what the
-    coupled and uncoupled networks get compared on."""
+
+    This is a SPIKE measure, and at ~1 Hz firing it is a blunt one: most bins
+    are empty for every cell, so it moves far less than the coupling does. The
+    subthreshold Vm correlation in experiments/run_gap_sweep.py is the sensitive
+    read-out of what the junctions are doing; this is the downstream consequence
+    that actually matters to the cerebellum, so both are reported."""
     edges = np.arange(t_start_ms, t_end_ms + bin_ms, bin_ms)
     if len(edges) < 3:
         return float("nan")

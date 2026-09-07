@@ -1,15 +1,28 @@
 #!/usr/bin/env python3
-"""Experiment 1: the microzone held at equilibrium (H1).
+"""H1 on the assembled microzone: does the closed loop settle at an equilibrium?
 
-Reports the numbers H1 turns on -- CF rate, mean PF->PKJ weight, drift -- plus
-the raster, weight and membrane-potential plots, without the wiring figures and
-synchrony analysis that experiments/run_network.py adds.
+The quickest useful run in the project. Reports the three numbers H1 turns on --
+CF rate, mean PF->PKJ weight, and the weight's drift -- plus raster, weight and
+membrane-potential figures. experiments/run_network.py does the same thing and
+adds the wiring figures and the synchrony analysis; this script is what you run
+when you only want the numbers.
 
-There is no smaller unit to run. CbmSim's connection counts only close for the
-whole microzone (32 PKJ x 3 targets = 96 = 8 DCN x 12 inputs), so shrinking the
-olive in isolation would leave the projection inconsistent; sim/connectivity.py
-rejects that rather than silently rewiring. Use --gap-g 0 to see the loop with
-the olivary cells electrically uncoupled.
+Caveats worth knowing before reading the output:
+
+  * 60 s is NOT long enough to call an equilibrium. The weights need a few
+    hundred seconds to reach their balance point from w_init, so the drift this
+    prints on a default run is still measuring the transient. Use
+    --duration-s 300 or more before quoting a drift, and see the README's
+    settling result for what the transient looks like.
+  * n=1. Every number here is one seed. The replicated versions of these results
+    come from experiments/sweep.py.
+
+There is no smaller network to run: CbmSim's connection counts have to close
+(320 PKJ x 3 targets = 960 = 80 DCN x 12 inputs), so the populations cannot be
+shrunk independently, and sim/connectivity.py raises rather than silently
+rewiring. Use --gap-g 0 to run the same loop with the olive uncoupled.
+
+Writes results/baseline_rasters.png, _weights.png and _voltages.png.
 """
 import argparse
 import sys
@@ -25,13 +38,20 @@ from sim.simulate import Simulation
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                       formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--duration-s", type=float, default=60.0)
+    parser.add_argument("--duration-s", type=float, default=60.0,
+                         help="simulated seconds after burn-in; about 2.5x that in wall-clock at "
+                              "the shipped scale. Use 300+ if you intend to read the drift "
+                              "figure (default: 60)")
     parser.add_argument("--gap-g", type=float, default=None,
-                         help="conductance of one gap junction, mS/cm^2 (0 = uncoupled olive)")
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--out-dir", type=str, default="results")
+                         help="conductance of ONE gap junction, mS/cm^2; 0 uncouples the olive "
+                              "(default: config.SimConfig.gap_g, 0.0143)")
+    parser.add_argument("--seed", type=int, default=0,
+                         help="seeds the PF Poisson draws and the membrane noise (default: 0)")
+    parser.add_argument("--out-dir", type=str, default="results",
+                         help="directory the three PNGs are written to (default: results)")
     parser.add_argument("--n-tracked-synapses", type=int, default=15,
-                         help="individual PF->PKJ synapses to plot alongside the mean (0 to disable)")
+                         help="individual PF->PKJ synapses plotted alongside the mean; "
+                              "0 disables the lower panel (default: 15)")
     args = parser.parse_args()
 
     cfg = SimConfig(duration_s=args.duration_s, seed=args.seed,

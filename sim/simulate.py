@@ -1,16 +1,25 @@
-"""Main time-stepped simulation loop.
+"""Main time-stepped simulation loop, and the recording layer.
 
-Every population is held flat -- one PKJPopulation of n_io*n_pkj_per_io cells,
-one DCNPopulation, one IOPopulation -- rather than one object per group. Group
-structure lives in the routing matrices built from sim/connectivity.py, so a
-projection is a matrix multiply against a spike vector instead of a Python loop
-over groups. That matters at this scale: the loop runs 90,000+ times.
+Assembles the whole microzone -- PF -> PKJ -| DCN -| IO -> CF, with CF both
+pausing its Purkinje cells and gating LTD at their PF synapses -- and steps it.
+
+Every population is held FLAT: one PKJPopulation of n_io*n_pkj_per_io cells, one
+DCNPopulation, one IOPopulation. The wiring lives entirely in the 0/1 routing
+matrices built from sim/connectivity.py, so each projection is a single matrix
+multiply against a spike vector rather than a Python loop over cells. That
+matters at this scale -- 320 Purkinje cells x 500 fibers is 160,000 plastic
+synapses stepped 68,000 times over a default run.
 
 Within a timestep the order is PF -> PKJ -> DCN -> IO -> CF/plasticity, each
-population reading its upstream source's *just-updated* spikes. That is a
-semi-implicit ordering choice -- the paper does not specify an integration
-order, and this propagates a step's effect around the whole loop in one step of
-latency instead of four.
+population reading its upstream source's *just-updated* spikes. The paper does
+not specify an integration order; this semi-implicit choice propagates a step's
+effect around the whole loop in one step of latency instead of four.
+
+`SimConfig.burn_in_s` runs the loop with plasticity and recording OFF before
+t = 0. Without it every cell starts from rest, the olive transiently overshoots
+toward its unopposed rate before DCN and PKJ activity ramps up to inhibit it,
+and the resulting burst of spurious early LTD permanently crashes the weights.
+That is a startup artifact, not modeled dynamics.
 """
 from dataclasses import dataclass, field
 
@@ -57,11 +66,14 @@ class SimLog:
 
     Spike trains are exact -- every spike of every cell, at full dt resolution --
     and are the primary record; firing rates are derived from them in
-    sim/analysis.py rather than logged as smoothed traces. Membrane potentials
-    are recorded only over a window at the end of the run (cfg.trace_window_s),
-    at full dt: sampling V at the slow logging cadence would alias away every
-    spike and every Ca2+ spike, and sampling it at dt for the whole run is a lot
-    of memory for a plot no one can read.
+    sim/analysis.py rather than logged as smoothed traces.
+
+    Two things are deliberately subsampled, for readability rather than cost.
+    The PF raster keeps cfg.n_pf_recorded of the 160,000 fibers. Membrane
+    potentials are recorded only over cfg.trace_window_s at the END of the run,
+    but at full dt there: sampling V at the slow logging cadence would alias
+    away every spike and every Ca2+ spike, and sampling it at dt for a whole run
+    is a lot of memory for a plot no one could read.
     """
     # --- spike trains: one array of spike times (ms) per cell ---
     io_spikes: list = field(default_factory=list)      # n_io trains -- these are the CF events
@@ -72,7 +84,7 @@ class SimLog:
 
     # --- slow traces, sampled every cfg.record_every_ms ---
     t_ms: np.ndarray = None
-    mean_weight: np.ndarray = None                     # (T, n_io) mean PF->PKJ weight per group
+    mean_weight: np.ndarray = None                     # (T, n_io) mean PF->PKJ weight per climbing-fiber territory
     sample_weights: np.ndarray = None                  # (T, n_tracked) individually tracked synapses
     tracked_synapses: np.ndarray = None                # (n_tracked, 2) the (pkj_row, pf_col) each column came from
 
@@ -86,27 +98,12 @@ class SimLog:
 
     # --- final state and bookkeeping ---
     final_weights: np.ndarray = None                   # (n_pkj, n_pf) at the end of the run
-    group_of_pkj: np.ndarray = None
-    group_of_dcn: np.ndarray = None
+    group_of_pkj: np.ndarray = None                    # plot colouring for PKJ: its climbing fiber
+    group_of_dcn: np.ndarray = None                    # plot colouring for DCN: its own index (it belongs to no CF)
     io_of_pkj: np.ndarray = None                       # which IO's climbing fiber owns each PKJ
-    gap_matrix: np.ndarray = None
+    gap_matrix: np.ndarray = None                      # (n_io, n_io) coupling conductances the run used
     duration_ms: float = 0.0
     meta: dict = field(default_factory=dict)
-
-    def as_arrays(self):
-        """Kept for callers written against the old dict-style log."""
-        return {
-            "t_ms": self.t_ms, "mean_weight": self.mean_weight,
-            "sample_weights": self.sample_weights, "io_spikes": self.io_spikes,
-            "pkj_spikes": self.pkj_spikes, "dcn_spikes": self.dcn_spikes,
-            "pf_spikes": self.pf_spikes, "trace_t_ms": self.trace_t_ms,
-            "trace_io_v": self.trace_io_v, "trace_io_ca": self.trace_io_ca,
-            "trace_pkj_v": self.trace_pkj_v, "trace_dcn_v": self.trace_dcn_v,
-            "trace_io_gaba": self.trace_io_gaba, "final_weights": self.final_weights,
-            "group_of_pkj": self.group_of_pkj, "group_of_dcn": self.group_of_dcn,
-            "io_of_pkj": self.io_of_pkj,
-            "gap_matrix": self.gap_matrix, "duration_ms": self.duration_ms,
-        }
 
 
 class Simulation:
@@ -120,9 +117,11 @@ class Simulation:
         )
         n_io, n_pkj, n_dcn = cfg.n_io, self.conn.n_pkj, self.conn.n_dcn
 
-        # Four independent RNG streams, all derived from cfg.seed. Keeping them separate means changing
-        # one source of randomness -- adding IO noise, recording different synapses -- never shifts the
-        # PF spike draws, so two runs stay comparable on everything else.
+        # Four independent RNG streams, all derived from cfg.seed. Keeping them separate means that
+        # changing one source of randomness -- turning on IO noise, recording different synapses --
+        # never shifts the PF spike draws, so two runs stay comparable on everything else. The
+        # connectivity and heterogeneity draws are seeded separately again (cfg.connectivity_seed,
+        # cfg.io_heterogeneity_seed), so the same network can be re-run under different input seeds.
         seed = cfg.seed
         self.rng = np.random.default_rng(seed)                                          # PF Poisson draws, and nothing else
         io_rng = np.random.default_rng(None if seed is None else [seed, 1])             # IO membrane noise
@@ -130,9 +129,9 @@ class Simulation:
         self.record_rng = np.random.default_rng(None if seed is None else [seed, 3])    # which cells/synapses get recorded
 
         # Which IO's climbing fiber owns each Purkinje cell -- exactly one, as in CbmSim's
-        # connectIOtoPC. There are no separable groups in this connectivity (see sim/connectivity.py),
-        # so the raster/plot colourings key off the climbing fiber for PF and PKJ, and off the cell's
-        # own index for DCN and IO.
+        # connectIOtoPC. This is the only grouping the circuit has: PKJ->DCN and DCN->IO both
+        # overlap across territories, so nuclear cells belong to no single climbing fiber. Plots
+        # therefore colour PF and PKJ by climbing fiber, and DCN and IO by their own index.
         self.io_of_pkj = self.conn.cf_of_pkj
         self.group_of_pkj = self.io_of_pkj
         self.group_of_dcn = np.arange(n_dcn)
@@ -246,10 +245,10 @@ class Simulation:
         trace_start = n_steps - n_trace                              # the window sits at the END of the run
         self._choose_recorded()
 
-        # --- burn-in: settle the loop's dynamics before plasticity or recording start ---
-        # Without it every cell starts from rest, and IO transiently overshoots toward its
-        # fully-unopposed rate before DCN/PKJ activity ramps up to inhibit it -- inflicting a burst of
-        # spurious early LTD that permanently crashes the weights before the loop reaches steady state.
+        # --- burn-in: settle the membrane state before plasticity or recording start ---
+        # See the module docstring. Note this settles the CELLS, not the weights: the weights still
+        # take a few hundred seconds to reach their equilibrium from w_init, which is why drift should
+        # be read off runs of 300 s or more (see the README's settling result).
         if burn_in_s > 0:
             self._plasticity_on = False
             for _ in range(int(round(burn_in_s * 1000.0 / cfg.dt_ms))):

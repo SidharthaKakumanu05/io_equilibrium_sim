@@ -150,7 +150,7 @@ class TestCFPause(unittest.TestCase):
         self.assertGreater(sum(int(pop.step().sum()) for _ in range(60)), 0)   # and recovers afterwards
 
     def test_pause_is_per_cell(self):
-        """One population holds every group's Purkinje cells, and each group is
+        """One population holds every Purkinje cell in the microzone, and each is
         paused by its own climbing fiber -- so a mask must pause only those cells."""
         # A 30 ms pause, against a 60 Hz baseline (16.7 ms ISI): every unpaused cell is then
         # guaranteed a spike inside the window whatever phase it happens to be in.

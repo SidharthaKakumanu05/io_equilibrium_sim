@@ -12,9 +12,14 @@ flight. Raw arrays (spike trains, weight trajectories, Vm traces) are written as
 compressed .npz only for conditions that ask for them, because writing them for
 every run of a large sweep costs far more disk than it saves re-computation.
 
-    python experiments/sweep.py --list
-    python experiments/sweep.py open_loop --workers 32
-    python experiments/sweep.py all --workers 60
+    python experiments/sweep.py --list                  # the matrix and its run counts
+    python experiments/sweep.py --dry-run               # what is still outstanding
+    python experiments/sweep.py open_loop --workers 32  # one experiment
+    python experiments/sweep.py all --workers 60        # everything: ~400 runs
+
+Then `python experiments/analyze_sweeps.py` turns the sidecars into replicated
+tables, and `python experiments/figures.py` turns them into the four figures.
+Neither re-simulates anything.
 """
 import argparse
 import dataclasses
@@ -48,8 +53,10 @@ OUT_ROOT = ROOT / "results" / "sweeps"
 # --- provenance ------------------------------------------------------------
 
 def source_fingerprint():
-    """SHA256 over every source file that can change a result. This project is not
-    a git repo, so the code itself is the version stamp."""
+    """SHA256 over every source file that can change a result -- config.py plus
+    all of sim/. Stamped into each sidecar so two results can be told apart when
+    the model has moved underneath them, independently of what the working tree
+    or the git history says."""
     h = hashlib.sha256()
     for rel in sorted(["config.py"] + [f"sim/{p.name}" for p in sorted((ROOT / "sim").glob("*.py"))]):
         h.update(rel.encode())
@@ -195,14 +202,18 @@ def _name(**kw):
 
 
 def exp_open_loop():
-    """THE ABLATION. Cut DCN->IO and nothing else.
+    """THE ABLATION, and the control H1 actually rests on. Cut DCN->IO and
+    nothing else -- wiring, plasticity, climbing-fiber teaching and gap junctions
+    all stay.
 
     H1 says the ~1 Hz CF rate is produced by the feedback limb. If so, removing
     only that limb must abolish it: CF rate should run free toward the cell's
-    intrinsic rate and the weights, no longer balanced, should be driven to a
-    bound. Run long (180 s) because the prediction is about where the weights
-    END UP, not where they start. Both heterogeneity levels, so the result
-    cannot be an artifact of identical cells."""
+    intrinsic rate, and the weights, no longer balanced against anything, should
+    be driven onto a bound. If the rate survived the cut, the equilibrium was a
+    coincidence of the operating point rather than a feedback effect. Run long
+    (180 s) because the prediction is about where the weights END UP. Both
+    heterogeneity levels, so the result cannot be an artifact of identical
+    cells."""
     out = []
     for ablate in (False, True):
         for cv in (0.0, 0.10):
@@ -249,11 +260,13 @@ def exp_heterogeneity_coupling():
 
 
 def exp_h2_window():
-    """H2 re-validation at the current scale, with replication.
+    """H2 with replication: does the plasticity window set the equilibrium rate?
 
-    The equilibrium interval should be window x (1 + delta-/delta+), so pairs of
-    settings with the same product must land on the same rate. The table in the
-    README is from an 8-IO build that no longer exists; this replaces it."""
+    The equilibrium inter-CF interval should be window x (1 + delta-/delta+), so
+    settings that reach the same PRODUCT by different routes must land on the
+    same rate. Three of the eight conditions below are deliberately paired with
+    another for exactly that: 100/19 with 200/9, 100/14 with 150/9, 100/4 with
+    50/9. Agreement within a pair is what a coincidence would not produce."""
     conds = [(100.0, 0.019, 0.001), (200.0, 0.009, 0.001), (100.0, 0.009, 0.001),
              (150.0, 0.009, 0.001), (100.0, 0.004, 0.001), (50.0, 0.009, 0.001),
              (100.0, 0.014, 0.001), (250.0, 0.009, 0.001)]
@@ -268,8 +281,9 @@ def exp_h2_window():
 
 def exp_h3_three_window():
     """H3: LTD -> null -> LTP. A null window should let delta-/delta+ sit closer
-    together and slow the weights' random walk, at the cost of blocking some LTP.
-    Never validated on a spiking network; this is its first real test."""
+    together and slow the weights' random walk, at the cost of blocking LTP
+    events the loop needs. Five widths at ten seeds each, so the trade can be
+    read as a monotone trend rather than a two-point difference."""
     return [{
         "_experiment": "h3_three_window",
         "_name": _name(null=nw, seed=seed),
@@ -280,10 +294,11 @@ def exp_h3_three_window():
 
 
 def exp_settling():
-    """How long does the loop actually take to settle? Every equilibrium number
-    in the README is read off a 90 s run, and the current drift (-0.00085/s) says
-    that is not long enough. 600 s runs, so the settling time can be measured
-    rather than assumed."""
+    """How long does the loop actually take to settle? Short runs report a drift
+    that is really still the transient, so this measures the settling time rather
+    than assuming it. 600 s runs; drift is read over the second half only. It is
+    what licenses the rule of thumb everywhere else in the project: quote
+    equilibria from runs of 300 s or more."""
     return [{
         "_experiment": "settling",
         "_name": _name(cv=cv, seed=seed),
@@ -294,10 +309,11 @@ def exp_settling():
 
 
 def exp_dt_convergence():
-    """Numerical validity. The IO substep is verified against a 4x finer one, but
-    the 1 ms OUTER loop -- which the plasticity windows, synaptic decay and the
-    whole feedback limb run on -- has never been checked. If halving dt moves the
-    equilibrium, the results are integration artifacts."""
+    """Numerical validity of the OUTER loop. tests/test_io_channels.py already
+    pins the IO's 0.1 ms substep against a 4x finer one; this checks the 1 ms
+    step that the plasticity windows, the synaptic decay and the whole feedback
+    limb run on. If halving dt moved the equilibrium, the results would be
+    integration artifacts rather than properties of the circuit."""
     return [{
         "_experiment": "dt_convergence",
         "_name": _name(dt=dt, seed=seed),
@@ -307,10 +323,14 @@ def exp_dt_convergence():
 
 
 def exp_topology():
-    """Coupling topology at MATCHED total conductance per cell. Measured earlier:
-    directly coupled pairs already reach Vm r = +0.90 while distant pairs plateau
-    at +0.44, so global synchrony is limited by path length, not by conductance.
-    If that is right, small_world should beat nearest_k at identical cost."""
+    """Coupling topology at MATCHED total conductance per cell -- every g below is
+    chosen so each cell sees 0.0572 mS/cm^2 in total, and only the wiring differs.
+
+    The hypothesis: under a local topology, directly coupled pairs are already
+    near correlation saturation while distant pairs are limited by the number of
+    hops between them, so global synchrony is set by path length rather than by
+    conductance. If so, small_world must beat nearest_k at identical cost, and
+    all_to_all must beat everything despite the weakest individual junctions."""
     out = []
     for topo, g, k in (("nearest_k", 0.0143, 2), ("small_world", 0.0143, 2),
                        ("ring", 0.0286, 1), ("all_to_all", 0.001467, 2)):
@@ -329,9 +349,11 @@ def exp_topology():
 
 def exp_pf_pool():
     """Sensitivity to the one scaled-down number. Each Purkinje cell gets 500
-    private Poisson fibers instead of CbmSim's 32,768 shared granule cells. If
-    the equilibrium moves with the pool size, the simplification is load-bearing
-    and has to be reported as such."""
+    private Poisson fibers instead of CbmSim's 32,768 shared granule cells, and
+    that simplification is load-bearing for H2, so it gets swept rather than
+    asserted. Total excitatory drive is n_pf x w x gain, so w should compensate
+    for n_pf and the RATE should be invariant while the WEIGHT is not -- until
+    the pool gets small enough that even w_max cannot supply the drive."""
     return [{
         "_experiment": "pf_pool",
         "_name": _name(npf=n, seed=seed),
@@ -363,10 +385,16 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("experiment", nargs="?", default="all",
-                    help="experiment name, 'all', or a comma-separated list")
-    ap.add_argument("--workers", type=int, default=max(1, min(60, (os.cpu_count() or 8) - 4)))
-    ap.add_argument("--list", action="store_true", help="show the matrix and exit")
-    ap.add_argument("--dry-run", action="store_true", help="count runs without running them")
+                    help=f"experiment name, 'all', or a comma-separated list. "
+                         f"Known: {', '.join(ORDER)} (default: all)")
+    ap.add_argument("--workers", type=int, default=max(1, min(60, (os.cpu_count() or 8) - 4)),
+                    help="parallel processes, one condition each. Each is single-threaded by "
+                         "design (see the BLAS note at the top) (default: cores - 4, capped at 60)")
+    ap.add_argument("--list", action="store_true",
+                    help="print the matrix and its run counts, then exit without running")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="report how many conditions are outstanding, then exit. Combined with "
+                         "the resume behaviour this says what a re-run would cost")
     args = ap.parse_args()
 
     if args.list:

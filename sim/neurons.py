@@ -1,10 +1,9 @@
 """PKJ and DCN neurons: conductance-based leaky integrate-and-fire.
 
-Both populations used to be continuous-rate leaky integrators
-(`dr/dt = (drive - r)/tau`). They are now spiking cells, so that every
-population in the network emits a real spike train and has a real membrane
-potential to record. The IO is unchanged in kind -- it was already
-conductance-based, and lives in sim/io_channels.py.
+The two populations share one model and differ only in their parameters and in
+what they are wired to; PKJPopulation adds the climbing-fiber pause, DCN adds
+nothing. The third cell type, the olive, is not an integrate-and-fire cell at
+all -- it has its own ionic machinery in sim/io_channels.py.
 
 Model, per cell:
 
@@ -26,10 +25,11 @@ That is exact for constant conductance and, unlike forward Euler, cannot
 overshoot when a large synaptic conductance makes tau_eff shorter than dt --
 which happens on every CF pause.
 
-Baseline rates stay the config knobs they were (`pkj_baseline_hz`,
-`dcn_baseline_hz`): `tonic_drive_for_rate` inverts the LIF f-I curve to find
-the I_tonic that makes an otherwise-unsynapsed cell fire at that rate, so the
-same number means the same thing it meant in the rate model.
+Baseline rates are configured directly as rates (`pkj_baseline_hz`,
+`dcn_baseline_hz`) rather than as currents: `tonic_drive_for_rate` inverts the
+LIF f-I curve to find the I_tonic that makes an otherwise-unsynapsed cell fire
+at that rate. So `pkj_baseline_hz = 50` really does mean 50 Hz, and re-tuning
+the membrane parameters does not silently move every baseline with it.
 """
 import numpy as np
 
@@ -106,8 +106,13 @@ class LIFPopulation:
         self.i_tonic = tonic_drive_for_rate(baseline_hz, tau_m_ms, v_th_mv, v_reset_mv, e_leak_mv, t_ref_ms, dt_ms)
         self.baseline_hz = baseline_hz
 
-        self.exc = ExpSynapse(n_units, tau_exc_ms, dt_ms, e_exc_mv)   # PF -> PKJ, or the DCN's tonic excitation pool
-        self.inh = ExpSynapse(n_units, tau_inh_ms, dt_ms, e_inh_mv)   # PKJ -> DCN inhibition
+        # One pool of each sign per population. On PKJ the excitatory pool carries PF input and the
+        # inhibitory one is unused (the CF pause is a separate conductance, see PKJPopulation); on
+        # DCN the inhibitory pool carries PKJ input and the excitatory one is unused, DCN's tonic
+        # drive being i_tonic rather than a synapse. Both are allocated either way so the two
+        # populations share one step().
+        self.exc = ExpSynapse(n_units, tau_exc_ms, dt_ms, e_exc_mv)
+        self.inh = ExpSynapse(n_units, tau_inh_ms, dt_ms, e_inh_mv)
 
         # Start each cell at a random point between reset and threshold, so the population does not
         # fire its first spike in lock-step (an artifact that would otherwise take several hundred ms to decorrelate).
@@ -129,7 +134,7 @@ class LIFPopulation:
         # plays in sim/io_channels.py, for the same reason.
         self.noise_sigma_mv = noise_sigma_mv
         self._noise_kick = noise_sigma_mv * np.sqrt(2.0 * dt_ms / tau_m_ms)
-        self._rng = rng if rng is not None else np.random.default_rng()
+        self._rng = rng
 
     def extra_conductances(self):
         """(g, g*E) contributions beyond exc/inh. Overridden by PKJPopulation
@@ -190,8 +195,8 @@ class PKJPopulation(LIFPopulation):
         self.pause_g = pause_g
         self.pause_ms = pause_ms
         self.e_pause_mv = e_pause_mv
-        # Per cell, because one population holds the Purkinje cells of every group and each group
-        # is paused by its own climbing fiber.
+        # Per cell, because one population holds every Purkinje cell in the microzone and each is
+        # paused only by the single climbing fiber that contacts it.
         self._pause_remaining_ms = np.zeros(self.n_units)
 
     def trigger_cf_pause(self, mask=None):
@@ -213,5 +218,6 @@ class PKJPopulation(LIFPopulation):
 
 class DCNPopulation(LIFPopulation):
     """Deep cerebellar nuclear cells: tonically driven LIF, inhibited by the
-    Purkinje cells of their group. No extra machinery beyond LIFPopulation --
-    the class exists so the network's three cell types are three named types."""
+    `n_pkj_per_dcn` Purkinje cells that converge on it. No extra machinery
+    beyond LIFPopulation -- the class exists so the network's three cell types
+    read as three named types at the call site."""

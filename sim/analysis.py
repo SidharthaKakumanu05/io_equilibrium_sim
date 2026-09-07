@@ -3,10 +3,16 @@
 Every rate here is counted from the recorded spike trains rather than read off a
 smoothed trace, so "1.02 Hz" means 61 climbing-fiber events in 60 seconds and
 not the current value of a low-pass filter.
+
+`summarize` is the one entry point that matters: it returns the dict of scalars
+every experiment and every sweep sidecar reports a run on. Everything else here
+is either one of those scalars in isolation or a figure.
 """
 import numpy as np
 
-GROUP_CMAP = "tab10"          # one colour per closed-loop group, shared across every raster and trace panel
+GROUP_CMAP = "tab10"          # shared across every raster and trace panel, so a colour means the same
+                              # cell group in all of them: climbing-fiber territory for PF and PKJ,
+                              # the cell's own index for DCN and IO
 
 
 def _mpl():
@@ -39,12 +45,6 @@ def spike_rate_hz(trains, t_start_ms=None, t_end_ms=None):
     return np.asarray(rates)
 
 
-def cf_rate_hz(log, tail_frac=1.0):
-    """Per-IO climbing-fiber rate over the last tail_frac of the run."""
-    t_end = float(log.duration_ms)
-    return spike_rate_hz(log.io_spikes, t_end * (1.0 - tail_frac), t_end)
-
-
 def isi_stats(trains):
     """(mean ISI ms, CV) per cell. CV ~ 0 is a clock, CV ~ 1 is Poisson. The
     conductance IO lands in between: its spiking is gated by the subthreshold
@@ -60,7 +60,12 @@ def isi_stats(trains):
 
 
 def weight_drift_slope(log, group=None):
-    """Linear drift of the mean PF->PKJ weight, in weight units per second."""
+    """Linear drift of the mean PF->PKJ weight, in weight units per second.
+
+    The headline H1 number: at equilibrium it should be ~0. Fitted over the
+    WHOLE logged run, so it only means "settled" on a run long enough to have
+    settled -- the weights take a few hundred seconds to reach equilibrium from
+    w_init, so read this off 300 s or more (see the README's settling result)."""
     t_s = log.t_ms / 1000.0
     w = log.mean_weight.mean(axis=1) if group is None else log.mean_weight[:, group]
     slope, _ = np.polyfit(t_s, w, 1)
@@ -68,13 +73,20 @@ def weight_drift_slope(log, group=None):
 
 
 def is_saturated(log, group=None, tol=0.02, w_min=0.0, w_max=1.0, tail_frac=0.2):
+    """True if the weights have pinned against a clip bound over the last
+    tail_frac of the run. A saturated run is not an equilibrium -- the balance
+    point is outside the reachable range -- so every reported result checks it."""
     w = log.mean_weight.mean(axis=1) if group is None else log.mean_weight[:, group]
     tail = w[int(len(w) * (1 - tail_frac)):]
     return bool(tail.mean() <= w_min + tol or tail.mean() >= w_max - tol)
 
 
 def predicted_ltd_ltp_ratio(ltd_window_ms, equilibrium_interval_ms=1000.0):
-    return (equilibrium_interval_ms - ltd_window_ms) / ltd_window_ms  # analytical zero-drift delta_minus/delta_plus
+    """H2's analytical prediction, inverted. At equilibrium each synapse gets one
+    LTD event per CF interval and LTP on every other spike, so zero net drift
+    needs delta_minus/delta_plus = (interval - window) / window. The forward form
+    -- rate = 1000 / (window * (1 + ratio)) -- is what the sweep checks against."""
+    return (equilibrium_interval_ms - ltd_window_ms) / ltd_window_ms
 
 
 def summarize(log, tail_frac=0.5):
@@ -117,16 +129,16 @@ def _raster_panel(ax, trains, group_of_cell, n_groups, t0, t1, label, plt, marke
 
 
 def plot_rasters(log, path, window_s=10.0, title="Network rasters"):
-    """PF / PKJ / DCN / IO spike rasters on a shared time axis, one colour per
-    closed-loop group. Restricted to the last `window_s` seconds: at the default
-    scale a whole run is a quarter-million spikes, which renders as a solid block."""
+    """PF / PKJ / DCN / IO spike rasters on a shared time axis. Restricted to the
+    last `window_s` seconds: at the default scale a whole run is well over a
+    million spikes, which renders as a solid block."""
     plt = _mpl()
     t0, t1 = _window(log, window_s)
     n_groups = int(log.meta.get("n_io", 1))
 
     # PF and PKJ are coloured by the climbing fiber that owns them -- the unit plasticity
-    # actually resolves against. Nuclear cells get their own colour each, since CbmSim's
-    # wiring shares them across the whole microzone rather than assigning them a territory.
+    # actually resolves against. Nuclear cells get a colour each instead: PKJ->DCN overlaps
+    # across territories, so a nuclear cell belongs to no single climbing fiber.
     io_of_pkj = log.io_of_pkj if log.io_of_pkj is not None else log.group_of_pkj
     pf_group = io_of_pkj[log.pf_recorded[:, 0]] if log.pf_recorded is not None else None
     fig, axes = plt.subplots(4, 1, figsize=(13, 10), sharex=True,
@@ -220,9 +232,10 @@ def plot_io_state(log, path, title="IO membrane potential and calcium"):
 # --- weights ---------------------------------------------------------------
 
 def plot_weights(log, path, title="PF->PKJ weights"):
-    """Top: mean weight per group. Bottom: the individually tracked synapses
-    against the network mean -- the spread between them is the random walk the
-    three-window variant is meant to slow."""
+    """Top: mean weight per climbing-fiber territory, plus the network mean.
+    Bottom: the individually tracked synapses against that mean -- the spread
+    between them is the random walk H3's null window is meant to slow, and it is
+    invisible in the mean, which averages it away over 160,000 synapses."""
     plt = _mpl()
     t_s = log.t_ms / 1000.0
     cmap = plt.get_cmap(GROUP_CMAP)

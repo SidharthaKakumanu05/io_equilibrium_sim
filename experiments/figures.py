@@ -1,4 +1,17 @@
-"""Deep analysis figures from the sweep, including the raw .npz trajectories.
+"""The four analysis figures, built from the sweep sidecars and the raw .npz
+trajectories. Re-runs in seconds; it never re-simulates anything.
+
+    python experiments/sweep.py all --workers 60    # produce the data (hours)
+    python experiments/figures.py                   # produce the figures (seconds)
+
+Writes results/fig1_h1_equilibrium.png (H1: the equilibrium and the ablation
+that removes it), fig2_plasticity.png (H2 predicted vs measured, and H3 as a
+trade-off), fig3_coupling.png (what gap junctions do and what limits them), and
+fig4_robustness.png (settling time, PF-pool sensitivity, timestep convergence).
+
+It takes no arguments -- every panel is tied to a specific experiment in
+sweep.py, so there is nothing to select. Run the sweep first: without sidecars
+this exits with a message rather than a traceback.
 
 Styling follows one validated categorical palette (blue/orange/aqua/yellow,
 checked with the dataviz validator: worst adjacent CVD dE 9.1, normal-vision
@@ -9,16 +22,28 @@ No chart here uses two y-scales. Where a panel would have needed one (rate and
 weight, rate and spread), the measures are split into their own panels or recast
 as a trade-off scatter, which is what the relationship actually is.
 """
-import collections, json, pathlib
+import collections, json, pathlib, sys
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SWEEPS = ROOT / "results" / "sweeps"
 OUT = ROOT / "results"
+
+# Every panel below indexes a specific sidecar or .npz by name, so a missing sweep
+# surfaces as a KeyError or FileNotFoundError deep inside a plotting call. Say what
+# is actually wrong instead.
+_NEEDED = ("open_loop", "initial_conditions", "heterogeneity_coupling",
+           "h2_window", "h3_three_window", "settling", "dt_convergence",
+           "topology", "pf_pool")
+_missing = [e for e in _NEEDED if not (SWEEPS / e).is_dir()]
+if _missing:
+    sys.exit(f"no sweep data for: {', '.join(_missing)}.\n"
+             f"Run `python experiments/sweep.py all --workers <n>` first "
+             f"(it is resumable, so a partial run can be continued).")
+OUT.mkdir(parents=True, exist_ok=True)
 
 # --- validated palette -----------------------------------------------------
 BLUE, ORANGE, AQUA, YELLOW = "#2a78d6", "#eb6834", "#1baf7a", "#eda100"
@@ -37,14 +62,18 @@ plt.rcParams.update({
 
 
 def load(exp):
+    """Every sidecar for one experiment."""
     return [json.loads(p.read_text()) for p in sorted((SWEEPS / exp).glob("*.json"))]
 
 
 def raw(exp, name):
+    """One run's saved trajectories. Only conditions marked `_save_raw` in
+    sweep.py have these, which is why the panels that use them pin seed=0."""
     return np.load(SWEEPS / exp / f"{name}.npz", allow_pickle=True)
 
 
 def agg(recs, key, metric):
+    """(x, mean, sample SD) of one metric against one swept override."""
     g = collections.defaultdict(list)
     for r in recs:
         g[r["overrides"].get(key)].append(r["metrics"][metric])
@@ -177,7 +206,7 @@ a.set_xlim(lim); a.set_ylim(lim)
 tidy(a, "Every setting lands on prediction", "predicted CF rate (Hz)", "measured CF rate (Hz)")
 
 # 2b: residuals -- the deviation, at readable scale
-a = a2 = ax[0, 1]
+a = ax[0, 1]
 resid = meas - pred
 a.axhline(0, color=AXIS, lw=1.2)
 a.errorbar(pred, resid, yerr=merr, fmt="o", color=BLUE, capsize=4, ms=7,
@@ -206,8 +235,8 @@ nulls = sorted(g3)
 rate = [np.mean([m["io_rate_hz"] for m in g3[n]]) for n in nulls]
 sd = [np.mean([m["cross_synapse_std"] for m in g3[n]]) for n in nulls]
 a.plot(rate, sd, "-", color=MUTED, lw=1.2, zorder=1)
-sc = a.scatter(rate, sd, c=[SEQ[i + 1] for i in range(len(nulls))], s=110,
-               edgecolors=SURFACE, linewidths=1.6, zorder=3)
+a.scatter(rate, sd, c=[SEQ[i + 1] for i in range(len(nulls))], s=110,
+          edgecolors=SURFACE, linewidths=1.6, zorder=3)
 for n, x_, y_ in zip(nulls, rate, sd):
     a.annotate(f"{n:.0f} ms", (x_, y_), xytext=(0, 11), textcoords="offset points",
                ha="center", fontsize=8.5, color=INK2)

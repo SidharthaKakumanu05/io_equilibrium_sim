@@ -11,10 +11,10 @@ the stages are independent: what PKJ does to DCN does not depend on where the
 PKJ spikes came from.
 
   1. pf_pkj_gain      PKJ alone under PF input at a fixed weight.
-                      Target: 50 Hz at weight 0, 70 Hz at weight 1 -- the span the
-                      superseded rate model produced, so a weight still means what
-                      it meant before, and the loop still has room to move in both
-                      directions from w_init = 0.5.
+                      Target: 50 Hz at weight 0, 70 Hz at weight 1. The span is
+                      what matters, not its endpoints: it has to leave the loop
+                      room to move in both directions from w_init = 0.5, and it
+                      is what makes a weight of 0.5 mean a mid-range Purkinje rate.
   2. pkj_dcn_gain     DCN alone under Poisson PKJ input, with as many converging
                       trains as the real circuit has (12 at CbmSim's ratios) and
                       the same convergence normalization.
@@ -27,6 +27,16 @@ PKJ spikes came from.
                       run_io_characterization.py, because a spike-driven
                       conductance *fluctuates*: the IO escapes during the troughs,
                       so it fires faster than the same mean conductance held steady.
+
+Every stage reads the LIVE config, including the convergence normalization
+sim/simulate.py applies, so re-running this after changing a population ratio,
+the olive's noise level or a membrane parameter re-derives the right gain rather
+than reporting a stale one. It prints the fitted value next to what config.py
+currently holds, so a drift between the two is visible at a glance -- it does
+not edit config.py.
+
+The IO stage dominates the runtime (CF events are rare, so each probe has to run
+long); --skip-io fits the two fast stages alone.
 
 Writes results/calibration_curves.png.
 """
@@ -82,8 +92,16 @@ def dcn_rate(cfg, gain, pkj_hz, secs, n=64, seed=0):
 
 def io_rate(cfg, gain, dcn_hz, secs, n=16, seed=0, settle_ms=3000):
     """IO population inhibited by n_dcn_per_io Poisson DCN trains through the
-    real exponential GABA synapse. Uncoupled: gap junctions change *when* cells
-    fire relative to each other, not the population rate this stage is fitting."""
+    real exponential GABA synapse. Returns (rate_hz, mean conductance).
+
+    Driven by SPIKES, not by a held conductance, and that is the whole point:
+    held constant at the operating point's mean the cell is silent, while the
+    same mean delivered as discrete events leaves it firing at ~1 Hz. Fitting
+    against the held-constant curve would produce a gain the closed loop never
+    sees. See config.dcn_io_gaba_gain.
+
+    Uncoupled: gap junctions change *when* cells fire relative to each other,
+    not the population rate this stage is fitting."""
     rng = np.random.default_rng(seed)
     io = IOPopulation(cfg.io_channels, n, cfg.dt_ms, rng=np.random.default_rng(seed + 1), g_gap=None)
     syn = ExpSynapse(n, cfg.tau_dcn_io_ms, cfg.dt_ms, cfg.io_channels.e_gaba)
@@ -119,14 +137,21 @@ def bisect(f, target, lo, hi, decreasing=False, iters=16):
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                       formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--fit-secs", type=float, default=8.0, help="run length per bisection probe")
-    parser.add_argument("--curve-secs", type=float, default=15.0, help="run length per plotted curve point")
+    parser.add_argument("--fit-secs", type=float, default=8.0,
+                         help="simulated seconds per bisection probe in stages 1 and 2; "
+                              "16 bisection steps each (default: 8)")
+    parser.add_argument("--curve-secs", type=float, default=15.0,
+                         help="simulated seconds per plotted curve point (default: 15)")
     parser.add_argument("--io-fit-secs", type=float, default=25.0,
-                         help="run length per IO probe; CF events are rare, so this stage needs longer")
+                         help="simulated seconds per stage-3 probe. CF events are rare (~1 Hz), so "
+                              "this stage needs far longer runs to resolve a rate (default: 25)")
     parser.add_argument("--skip-io", action="store_true",
-                         help="fit only the two fast stages (the IO stage dominates the runtime)")
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--out-dir", type=str, default="results")
+                         help="fit stages 1 and 2 only. Stage 3 dominates the runtime, and the "
+                              "other two gains do not depend on it")
+    parser.add_argument("--seed", type=int, default=0,
+                         help="seeds the surrogate input trains and the membrane noise (default: 0)")
+    parser.add_argument("--out-dir", type=str, default="results",
+                         help="directory calibration_curves.png is written to (default: results)")
     args = parser.parse_args()
 
     cfg = SimConfig()

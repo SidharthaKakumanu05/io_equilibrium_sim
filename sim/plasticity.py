@@ -1,23 +1,39 @@
 """Coincidence-detection LTD/LTP(/null) plasticity for PF -> PKJ synapses.
 
-Every Purkinje cell in the network shares one weight matrix and one instance of
-this class; `cf_source_of_pkj` says which climbing fiber each row listens to, so
-a network of several closed-loop groups resolves each group's synapses against
-that group's own IO neuron.
+The rule, which is the white paper's: a PF spike is DEPRESSED if a
+climbing-fiber event follows it within `ltd_window_ms`, and POTENTIATED if none
+does. The three-window variant (H3) inserts a `null_window_ms` after the LTD
+window in which a CF event produces no change at all, so a near-miss neither
+depresses nor potentiates.
 
-The rule is retrospective: a PF spike is not resolved when it arrives, but
-`ltd_steps + null_steps` later, once it is known whether a CF event landed in
-its LTD window, its null window, or neither. Rather than queueing an event per
-spike, the implementation keeps a circular buffer of past PF-spike arrays and a
-circular buffer of *cumulative* CF counts per source. Whether a CF fell in a
-window is then a subtraction of two counters -- O(1) per timestep regardless of
-how many synapses spiked -- and is exactly equivalent to scheduling each spike
-individually, because the count difference is precisely the number of CF events
-in that interval.
+Every Purkinje cell in the microzone shares one weight matrix and one instance
+of this class. `cf_source_of_pkj` gives the single climbing fiber that contacts
+each cell (CbmSim's `connectIOtoPC` guarantees exactly one), so each row
+resolves against its own olivary neuron rather than against a population
+average.
 
-Window boundaries are inclusive on the near edge: a CF at exactly
-`ltd_window_ms` after a spike still counts as LTD, and the very next timestep
-does not. tests/test_plasticity.py pins that boundary in both window schemes.
+The implementation is retrospective: a PF spike is not resolved when it
+arrives, but `ltd_steps + null_steps` later, once it is known whether a CF event
+landed in its LTD window, its null window, or neither. Rather than queueing an
+event per spike -- 160,000 synapses at 20 Hz means scheduling and retiring about
+3.2 million events per simulated second -- it keeps a circular buffer of past
+PF-spike arrays plus a circular buffer of *cumulative* CF counts per source.
+Whether a CF fell in a window is then a subtraction of two counters, O(1) per
+timestep regardless of how many synapses spiked, and exactly equivalent to
+scheduling each spike individually: the count difference IS the number of CF
+events in that interval.
+
+The LTD window is delays 1..ltd_steps inclusive, and both ends matter:
+
+  * A CF at exactly `ltd_window_ms` after the spike still depresses; the very
+    next timestep potentiates instead.
+  * A CF in the SAME timestep as the spike (delay 0) potentiates, not depresses.
+    `step` folds this step's CF events into the cumulative counters before
+    recording them, so a simultaneous CF reads as already-past rather than as
+    falling inside the window. That is the right sense for a rule about a CF
+    *following* a PF spike, and tests/test_plasticity.py pins it.
+
+tests/test_plasticity.py pins every boundary in both window schemes.
 """
 import numpy as np
 
@@ -34,7 +50,8 @@ class Plasticity:
         self.w_min = w_min                                           # weight clip lower bound
         self.w_max = w_max                                           # weight clip upper bound
 
-        # Which CF each Purkinje cell listens to. Default: one shared source, i.e. a single group.
+        # Which CF each Purkinje cell listens to. Default: one shared source, which is what the
+        # unit tests drive; the assembled network always passes the real cf_of_pkj map.
         if cf_source_of_pkj is None:
             self.cf_source_of_pkj = np.zeros(n_pkj, dtype=int)
         else:

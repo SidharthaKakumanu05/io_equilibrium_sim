@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """What the IO-IO gap junctions actually do to the closed loop.
 
-Sweeps the conductance of a single gap junction from zero upward and measures,
-in the assembled network:
+Sweeps the conductance of a single gap junction from zero upward, running the
+whole assembled network at each value, and measures:
 
   * subthreshold Vm correlation between IO cells -- the direct read-out of
     electrical coupling. Ca2+ spikes are masked out, so this measures the
@@ -15,9 +15,17 @@ in the assembled network:
     other, and past a point that load suppresses the Ca2+ spike, drops the CF
     rate below the plasticity's balance point, and lets the weights climb.
 
-The default `gap_g` is chosen from this curve: strong enough to be in the
+The headline result is the dissociation between the two: across the sweep, Vm
+correlation moves many-fold while CF rate stays flat at ~1 Hz. Coupling changes
+WHEN the olive fires together, not HOW OFTEN -- the rate is set by the
+plasticity's balance point, independently of synchrony.
+
+config.SimConfig.gap_g is chosen from this curve: strong enough to sit in the
 physiological regime (total coupling conductance ~ g_leak) and to produce
 measurable correlation, weak enough to leave the loop's equilibrium intact.
+Note it sweeps STRENGTH at a fixed topology; `experiments/sweep.py topology`
+does the complementary experiment, varying the wiring at matched total
+conductance, and finds topology matters more.
 
 Writes results/gap_coupling_sweep.png.
 """
@@ -55,14 +63,24 @@ def main():
                                       formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--gap-g", type=float, nargs="+",
                          default=[0.0, 0.008, 0.02, 0.03, 0.05, 0.08],
-                         help="single-junction conductances to sweep, mS/cm^2")
-    parser.add_argument("--duration-s", type=float, default=40.0)
+                         help="single-junction conductances to sweep, mS/cm^2. One full network "
+                              "run each, so the list length is the cost "
+                              "(default: 0 0.008 0.02 0.03 0.05 0.08)")
+    parser.add_argument("--duration-s", type=float, default=40.0,
+                         help="simulated seconds per point. Long enough for the correlation "
+                              "measures, not for a settled weight (default: 40)")
     parser.add_argument("--trace-window-s", type=float, default=8.0,
-                         help="Vm window the subthreshold correlation is measured over")
+                         help="Vm window at the end of each run that the subthreshold correlation "
+                              "is measured over; longer means more sample pairs (default: 8)")
     parser.add_argument("--topology", type=str, default=None,
-                         choices=["all_to_all", "ring", "nearest_k"])
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--out-dir", type=str, default="results")
+                         choices=["all_to_all", "ring", "nearest_k", "small_world"],
+                         help="coupling graph held fixed across the sweep. Remember each topology "
+                              "gives a different number of partners, so the same gap_g is a "
+                              "different TOTAL conductance (default: config's nearest_k)")
+    parser.add_argument("--seed", type=int, default=0,
+                         help="seeds the PF Poisson draws and the membrane noise (default: 0)")
+    parser.add_argument("--out-dir", type=str, default="results",
+                         help="directory gap_coupling_sweep.png is written to (default: results)")
     args = parser.parse_args()
 
     from sim.simulate import Simulation

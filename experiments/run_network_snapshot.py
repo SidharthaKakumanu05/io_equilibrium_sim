@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """Snapshot of the wired network: every neuron in 3D, and the connectivity
-matrix the wiring induces.
+matrix the wiring induces. Instant -- it runs no simulation.
 
-Runs no simulation -- it builds the same Connectivity and gap-junction matrix
-sim/simulate.py would build from this config, turns them into a graph, and draws
-it. So it is fast, and it is a picture of the network that would actually run.
+It builds exactly the Connectivity and gap-junction matrix sim/simulate.py would
+build from this config, turns them into a graph, and draws it. So it is a
+picture of the network that would actually run, not a redrawing of the intent,
+and it is the fastest way to see what a topology or population change does to
+the wiring before paying for a simulation.
 
-  results/network_3d.png            neurons in 3D + the loop + the gap-junction web
+  results/network_3d.png            neurons in 3D + one path around the loop + the gap web
   results/connectivity_matrix.png   adjacency matrix, block-structured by cell type
+
+Both are also written by run_network.py, from the network that just ran.
 """
 import argparse
 import sys
@@ -29,16 +33,24 @@ def main():
                          help="override cfg.n_io; n_dcn follows as 2*n_io, which is what the "
                               "PKJ->DCN counts require (n_pkj*n_dcn_per_pkj == n_dcn*n_pkj_per_dcn)")
     parser.add_argument("--gap-topology", type=str, default=None,
-                         choices=("all_to_all", "ring", "nearest_k"),
-                         help="override cfg.gap_topology")
+                         choices=("all_to_all", "ring", "nearest_k", "small_world"),
+                         help="override cfg.gap_topology; the panel-3 web is what changes "
+                              "(default: nearest_k)")
     parser.add_argument("--gap-g", type=float, default=None,
-                         help="override cfg.gap_g, the conductance of ONE junction (mS/cm^2)")
+                         help="override cfg.gap_g, the conductance of ONE junction (mS/cm^2). "
+                              "0 draws no junctions at all (default: 0.0143)")
     parser.add_argument("--n-pf-shown", type=int, default=8,
-                         help="PF units drawn per Purkinje cell (all of them is unreadable)")
+                         help="PF units drawn per Purkinje cell. All 500 is neither drawable nor "
+                              "a readable adjacency matrix; every other cell is shown in full "
+                              "(default: 8)")
     parser.add_argument("--open-loop", action="store_true",
-                         help="rotate DCN->IO across groups instead of closing each loop")
-    parser.add_argument("--out-dir", type=str, default="results")
-    parser.add_argument("--seed", type=int, default=0, help="seeds only the PF cloud's jitter")
+                         help="set enforce_closed_loop=False: rotate which block of the nucleus "
+                              "each olivary cell reads, misrouting the feedback without cutting it")
+    parser.add_argument("--out-dir", type=str, default="results",
+                         help="directory the two PNGs are written to (default: results)")
+    parser.add_argument("--seed", type=int, default=0,
+                         help="seeds only the drawn PF cloud's jitter, not the wiring "
+                              "(that is cfg.connectivity_seed) (default: 0)")
     args = parser.parse_args()
 
     cfg = SimConfig()
@@ -68,7 +80,7 @@ def main():
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     plot_network_3d(graph, out_dir / "network_3d.png",
-                     title=f"io_equilibrium_sim -- {cfg.n_io} closed-loop groups, "
+                     title=f"io_equilibrium_sim -- {cfg.n_io} IO / {cfg.n_dcn} DCN / {conn.n_pkj} PKJ, "
                            f"{cfg.gap_topology} IO coupling")
     plot_connectivity_matrix(graph, out_dir / "connectivity_matrix.png")
     print(f"[snapshot] wrote {out_dir}/network_3d.png and {out_dir}/connectivity_matrix.png")

@@ -355,7 +355,7 @@ class TestSimulationWiring(unittest.TestCase):
         self.assertTrue(np.all(np.isfinite(log.trace_pkj_v)))
         self.assertTrue(np.all(np.isfinite(log.trace_dcn_v)))
 
-    def test_each_group_is_driven_by_its_own_climbing_fiber(self):
+    def test_each_purkinje_cell_is_driven_by_its_own_climbing_fiber(self):
         """cf_source_of_pkj must route each Purkinje cell to the one climbing fiber
         that contacts it; if it did not, plasticity across the microzone would
         resolve against the wrong CF."""
