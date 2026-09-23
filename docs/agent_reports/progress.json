@@ -1,0 +1,2370 @@
+{
+  "active_stage": "realtime_running",
+  "authorization": "User 2026-09-18 explicitly supersedes setup-only; pipeline, recovery tests, short pilots and validated 18000-s background-only conditions authorized on standalone Eccles; user2026-09-19 additionally requests one combined heterogeneity/synaptic-scaling run.; user requests replacing heterogeneity/fixed gain perturbation with homeostatic synaptic scaling; accepts 60 Hz target and hours-scale defaults.; user 2026-09-21 explicitly selected use completed four-hour result rather than a fresh restart.; user 2026-09-21 requests implementing and comparing Abbott and Mauk cascade alternatives after removing unnecessary project files; no specific historical datasets named for deletion.; user explicitly approved: \"Delete the old test dumps; keep scientific runs\", covering exact cascade cleanup bulky_candidates.json list; focused cascade comparison first selected.; user requests significant simulation speedup targeting 1 biological hour per wall hour, followed by four biological hours for all compared variants.",
+  "baseline_file_hashes": "docs/agent_reports/setup_validation.json",
+  "blockers": [],
+  "code_revision": "8437bde0f6828b045caecc698e258c4430b94492",
+  "completed_campaigns": [
+    {
+      "completed": "2026-09-19T19:49:39.658119+00:00",
+      "completion": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/CAMPAIGN_COMPLETE.json",
+      "manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/campaign.json",
+      "prior_stage_record": {
+        "campaign_manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/campaign.json",
+        "campaign_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 experiments/run_background_campaign.py launch --campaign /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/campaign.json --resume",
+        "campaign_status": "complete",
+        "completed_at_utc": "2026-09-19T19:49:39.652625+00:00",
+        "evidence": [
+          "docs/agent_reports/evidence/runner_checks/",
+          "docs/agent_reports/evidence/coordinator_resume_20260918/audit.json",
+          "docs/agent_reports/evidence/coordinator_resume_20260918/recovery_gate_review.json",
+          "docs/agent_reports/evidence/runner_checks/safeguards.json",
+          "docs/agent_reports/evidence/coordinator_resume_20260918/long_launch_gate_review.json"
+        ],
+        "failed_attempts": [
+          {
+            "evidence": "docs/agent_reports/evidence/runner_checks/failed_attempt_1_recovery_harness.log",
+            "gate": "recovery_harness",
+            "reason": "Exact comparator did not support immutable NumPy scalar-type objects in recorder schema; TypeError vars(), after scientific state and record arrays compared exactly. Correct comparator to check type objects by identity; no tolerance changes.",
+            "status": "resolved_exact_recovery_passed"
+          }
+        ],
+        "long_launch_gate": "accepted",
+        "long_launch_review": "docs/agent_reports/evidence/coordinator_resume_20260918/long_launch_gate_review.json",
+        "long_started_at_utc": "2026-09-18T16:41:13.034062+00:00",
+        "note": "All implementation/recovery/pilot/resource gates passed;8condition queue launched16:41:13UTC,4live/4queued. Complete-state checkpoints every300sim seconds; no analyst until all runs and automatic analyses pass.",
+        "pending_launch": {
+          "campaign_manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/pilot_campaign.json",
+          "command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 experiments/run_background_campaign.py launch --campaign /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/pilot_campaign.json",
+          "completed_at_utc": "2026-09-18T16:39:06.546666+00:00",
+          "duplicate_prevention": "One existing tool approval request may execute; reconcile it and pilot_control/supervisor_status.json before launching.",
+          "kind": "four_condition_30s_pilot",
+          "process_identity": {
+            "affinity": [
+              4
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+              "supervise",
+              "--campaign",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/pilot_campaign.json"
+            ],
+            "hostname": "Eccles",
+            "pid": 988427,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 1,
+            "proc_start_ticks": "508010744",
+            "proc_stat": "988427 (python3) R 1 988427 988427 0 -1 4194304 4116 0 0 0 7 1 0 0 20 0 1 0 508010744 114110464 7424 18446744073709551615 94318623997952 94318626819501 140735105588048 0 0 0 0 16781312 2 0 0 0 17 4 0 0 0 0 0 94318629181456 94318629465400 94318638055424 140735105592958 140735105593236 140735105593236 140735105597415 0\n",
+            "sid": 988427,
+            "utc": "2026-09-18T16:37:06.296953+00:00"
+          },
+          "status": "pilot_completed_long_launched"
+        },
+        "pilot_evidence": "docs/agent_reports/evidence/runner_checks/pilot_gate.json",
+        "pilot_progress_path": "docs/agent_reports/evidence/runner_checks/pilot_progress.json",
+        "pilot_status": "passed",
+        "prepared_campaign": "results/workflow_campaign/background_20260918T160421Z/campaign.json",
+        "recovery_evidence": "docs/agent_reports/evidence/runner_checks/recovery_latest.json",
+        "recovery_status": "passed",
+        "report": "docs/agent_reports/experiment_report.md",
+        "report_status": "long_campaign_running",
+        "resume_command": "codex -C /home/sk57289/io_equilibrium_sim 'Resume experiment_runner; latest user explicitly authorizes implementation and validation then five biological hours of background activity per condition; inspect progress and live identities before any launch.'",
+        "started_at_utc": "2026-09-18T15:52:11.028557+00:00",
+        "status": "complete",
+        "supervisor_identity": {
+          "affinity": [
+            4
+          ],
+          "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+          "command": [
+            "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+            "supervise",
+            "--campaign",
+            "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/campaign.json"
+          ],
+          "hostname": "Eccles",
+          "pid": 990064,
+          "pid_namespace": "pid:[4026531836]",
+          "ppid": 1,
+          "proc_start_ticks": "508035418",
+          "proc_stat": "990064 (python3) R 1 990064 990064 0 -1 4194304 4121 0 0 0 8 1 0 0 20 0 1 0 508035418 114114560 7552 18446744073709551615 94267263397888 94267266219437 140727398417840 0 0 0 0 16781312 2 0 0 0 17 4 0 0 0 0 0 94267268581392 94267268865336 94267298304000 140727398424196 140727398424468 140727398424468 140727398428647 0\n",
+          "sid": 990064,
+          "utc": "2026-09-18T16:41:13.033946+00:00"
+        }
+      },
+      "run_ids": [
+        "baseline_seed0_18000s",
+        "gap_off_seed0_18000s",
+        "gap_half_seed0_18000s",
+        "gap_strong_seed0_18000s",
+        "heterogeneity_015_seed0_18000s",
+        "heterogeneity_030_seed0_18000s",
+        "pf_strength_half_seed0_18000s",
+        "pf_strength_double_seed0_18000s"
+      ]
+    },
+    {
+      "completed": "2026-09-21T04:26:52.548386+00:00",
+      "completion_evidence": [
+        {
+          "analysis_marker_sha256": "5a595eefe0d9501d09b0ed465f9219b47b2459d27ee588065532dd13688e614a",
+          "complete_sha256": "934afdc82f8ccfd5a7d0934ab34199e66bfb705b22700bb3e64cb8574c9cd6c4",
+          "id": "baseline_seed0_18000s"
+        },
+        {
+          "analysis_marker_sha256": "83bbcefa3de16ae28697b0813676166b691d4e84a23566aa011112898cacf7f4",
+          "complete_sha256": "9b3e2309457586b07a70db4a577ee7fdadc9c4d053f6d6f1f5a05d895e4cdc2d",
+          "id": "gap_off_seed0_18000s"
+        },
+        {
+          "analysis_marker_sha256": "f8378847bdee47330e1180bf44a9b39a835ec6bd266a7ffbc5393e9cb0273001",
+          "complete_sha256": "4220b42cae253c3b4427ac7bdfae0e810f5c0c86af4c9dbca18e3a6be7856e66",
+          "id": "gap_half_seed0_18000s"
+        },
+        {
+          "analysis_marker_sha256": "11ea303020925ff6bd7f0382cd6c960ba54a4e77b5ee0cb993d0b7e55e35f730",
+          "complete_sha256": "9d49f1ad23845a89ed5362c2319e2e7edf505edfec242567e91623099b51fd4a",
+          "id": "gap_strong_seed0_18000s"
+        },
+        {
+          "analysis_marker_sha256": "b6a7a3eac19657cef8bdc2c0528f6efb19596e9f3b11b6a16cd7ebb00173db28",
+          "complete_sha256": "cf5e9db6dbda6a4526051e34e5513c3bfc7d4213857fac1a03ef9e6b8d9b037b",
+          "id": "heterogeneity_015_seed0_18000s"
+        },
+        {
+          "analysis_marker_sha256": "cf27d25464aee182a2667abc23020281f4b3aab2662b24e5fea023c9a610913d",
+          "complete_sha256": "b152a96a2d0fa803b9e3983794a07ed086021c76904b647530fabec26a2eaf45",
+          "id": "heterogeneity_030_seed0_18000s"
+        },
+        {
+          "analysis_marker_sha256": "1d8934f94128ea6a62e8f75d45e2a648f8dd38ed2302376051a9309e407b6cc2",
+          "complete_sha256": "5838b9834cff7a7114a6c92986e8274a53f803ef66b0c79dcf17448a936b052c",
+          "id": "pf_strength_half_seed0_18000s"
+        },
+        {
+          "analysis_marker_sha256": "7d41d7dee8234e18b606946ce0517d6936da64472804c207eff5868352037869",
+          "complete_sha256": "e701d64c1ad6403ab7e23fc9dfb3e1bb459f61ec627f00e0dfdd3bbdf5cb1036",
+          "id": "pf_strength_double_seed0_18000s"
+        },
+        {
+          "analysis_marker_sha256": "565cc7dc610c6d80b8da2f175d4252936c25bc1a51eda19d4825840acd846384",
+          "complete_sha256": "bd25d10e7352f0b47141e7263e6b5ea22e03899298fb42788d9a9742843af774",
+          "id": "heterogeneity_015_pf_strength_double_seed0_18000s"
+        }
+      ],
+      "manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/combined_campaign.json",
+      "note": "Archived completed nine-condition campaign when homeostasis replacement launched",
+      "runs": [
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/baseline_seed0_18000s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/baseline_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/baseline_seed0_18000s",
+          "checkpoint": "g-finished-00008000-018000000-45aab4fde911",
+          "condition": "baseline",
+          "cpu": 4,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-018000000-45aab4fde911",
+            "manifest_sha256": "5ee533107b2f79b2b90b7f922fba7317a5aaafff164a31fcc09ccb59ed95c95e"
+          },
+          "expected_final_step": 18000000,
+          "id": "baseline_seed0_18000s",
+          "identity": {
+            "affinity": [
+              4
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/baseline_seed0_18000s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/baseline_seed0_18000s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/baseline_seed0_18000s"
+            ],
+            "hostname": "Eccles",
+            "pid": 990067,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 990064,
+            "proc_start_ticks": "508035429",
+            "proc_stat": "990067 (python3) R 990064 990064 990064 0 -1 4194304 4469 109 0 0 8 0 0 0 20 0 1 0 508035429 115642368 7808 18446744073709551615 93894228430848 93894231252397 140722049833664 0 0 0 0 16781313 16386 0 0 0 17 4 0 0 0 0 0 93894233614352 93894233898296 93894256676864 140722049842562 140722049843092 140722049843092 140722049847271 0\n",
+            "sid": 990064,
+            "utc": "2026-09-18T16:41:13.389537+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/baseline_seed0_18000s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/baseline_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/baseline_seed0_18000s",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/baseline_seed0_18000s.json",
+          "status": "validated",
+          "step": 18000000,
+          "updated": "2026-09-19T05:31:31.797758+00:00"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/gap_off_seed0_18000s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/gap_off_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/gap_off_seed0_18000s",
+          "checkpoint": "g-finished-00008000-018000000-9c5a6d38c7a3",
+          "condition": "gap_off",
+          "cpu": 5,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-018000000-9c5a6d38c7a3",
+            "manifest_sha256": "a47c1cf2d7eca6f4093cfc1995e095ca304821f67e374a6fc270b5020f249a97"
+          },
+          "expected_final_step": 18000000,
+          "id": "gap_off_seed0_18000s",
+          "identity": {
+            "affinity": [
+              5
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/gap_off_seed0_18000s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/gap_off_seed0_18000s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/gap_off_seed0_18000s"
+            ],
+            "hostname": "Eccles",
+            "pid": 990068,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 990064,
+            "proc_start_ticks": "508035429",
+            "proc_stat": "990068 (python3) R 990064 990064 990064 0 -1 4194304 4469 110 0 0 7 1 0 0 20 0 1 0 508035429 115642368 7808 18446744073709551615 93911664799744 93911667621293 140720558519984 0 0 0 0 16781313 16386 0 0 0 17 5 0 0 0 0 0 93911669983248 93911670267192 93911676645376 140720558525829 140720558526356 140720558526356 140720558530535 0\n",
+            "sid": 990064,
+            "utc": "2026-09-18T16:41:13.433673+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/gap_off_seed0_18000s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/gap_off_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/gap_off_seed0_18000s",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/gap_off_seed0_18000s.json",
+          "status": "validated",
+          "step": 18000000,
+          "updated": "2026-09-19T05:31:00.002542+00:00"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/gap_half_seed0_18000s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/gap_half_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/gap_half_seed0_18000s",
+          "checkpoint": "g-finished-00008000-018000000-0d4164ee4f61",
+          "condition": "gap_half",
+          "cpu": 16,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-018000000-0d4164ee4f61",
+            "manifest_sha256": "6c2c61fe6f8bf5eab7846fd5c8a1b48ef56fdc6cf3b8bfbda9a6d412fb35ca9f"
+          },
+          "expected_final_step": 18000000,
+          "id": "gap_half_seed0_18000s",
+          "identity": {
+            "affinity": [
+              16
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/gap_half_seed0_18000s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/gap_half_seed0_18000s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/gap_half_seed0_18000s"
+            ],
+            "hostname": "Eccles",
+            "pid": 990069,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 990064,
+            "proc_start_ticks": "508035431",
+            "proc_stat": "990069 (python3) R 990064 990064 990064 0 -1 4194304 4472 108 0 0 8 0 0 0 20 0 1 0 508035431 115642368 7808 18446744073709551615 94072899018752 94072901840301 140730390750640 0 0 0 0 16781313 16386 0 0 0 17 16 0 0 0 0 0 94072904202256 94072904486200 94072904990720 140730390756738 140730390757268 140730390757268 140730390761447 0\n",
+            "sid": 990064,
+            "utc": "2026-09-18T16:41:13.462030+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/gap_half_seed0_18000s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/gap_half_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/gap_half_seed0_18000s",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/gap_half_seed0_18000s.json",
+          "status": "validated",
+          "step": 18000000,
+          "updated": "2026-09-19T06:17:34.397422+00:00"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/gap_strong_seed0_18000s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/gap_strong_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/gap_strong_seed0_18000s",
+          "checkpoint": "g-finished-00008000-018000000-0216246d6c37",
+          "condition": "gap_strong",
+          "cpu": 17,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-018000000-0216246d6c37",
+            "manifest_sha256": "1e07384af6329650cd95f9b209e11042b8b9134a440159b7e6ae6df8c9a97041"
+          },
+          "expected_final_step": 18000000,
+          "id": "gap_strong_seed0_18000s",
+          "identity": {
+            "affinity": [
+              17
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/gap_strong_seed0_18000s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/gap_strong_seed0_18000s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/gap_strong_seed0_18000s"
+            ],
+            "hostname": "Eccles",
+            "pid": 990070,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 990064,
+            "proc_start_ticks": "508035434",
+            "proc_stat": "990070 (python3) R 990064 990064 990064 0 -1 4194304 4470 108 0 0 8 1 0 0 20 0 1 0 508035434 115642368 7808 18446744073709551615 94207407271936 94207410093485 140733357203264 0 0 0 0 16781313 16386 0 0 0 17 17 0 0 0 0 0 94207412455440 94207412739384 94207445983232 140733357206908 140733357207444 140733357207444 140733357211623 0\n",
+            "sid": 990064,
+            "utc": "2026-09-18T16:41:13.489070+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/gap_strong_seed0_18000s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/gap_strong_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/gap_strong_seed0_18000s",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/gap_strong_seed0_18000s.json",
+          "status": "validated",
+          "step": 18000000,
+          "updated": "2026-09-19T06:17:31.188266+00:00"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/heterogeneity_015_seed0_18000s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/heterogeneity_015_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/heterogeneity_015_seed0_18000s",
+          "checkpoint": "g-finished-00008000-018000000-517dbffc1d4b",
+          "condition": "heterogeneity_015",
+          "cpu": 4,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-018000000-517dbffc1d4b",
+            "manifest_sha256": "b71894dd899b1b6776714d889fe3063c23a8ad7b9425f127d5d90508276521f9"
+          },
+          "expected_final_step": 18000000,
+          "id": "heterogeneity_015_seed0_18000s",
+          "identity": {
+            "affinity": [
+              4
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/heterogeneity_015_seed0_18000s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/heterogeneity_015_seed0_18000s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/heterogeneity_015_seed0_18000s"
+            ],
+            "hostname": "Eccles",
+            "pid": 1179830,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 990064,
+            "proc_start_ticks": "512659176",
+            "proc_stat": "1179830 (python3) R 990064 990064 990064 0 -1 4194304 4585 108 0 0 7 1 0 0 20 0 1 0 512659176 115630080 7680 18446744073709551615 94118484152320 94118486973869 140733422862144 0 0 0 0 16781313 16386 0 0 0 17 4 0 0 0 0 0 94118489335824 94118489619768 94118503329792 140733422865767 140733422866324 140733422866324 140733422870503 0\n",
+            "sid": 990064,
+            "utc": "2026-09-19T05:31:50.619463+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/heterogeneity_015_seed0_18000s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/heterogeneity_015_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/heterogeneity_015_seed0_18000s",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/heterogeneity_015_seed0_18000s.json",
+          "status": "validated",
+          "step": 18000000,
+          "updated": "2026-09-19T18:22:44.699842+00:00"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/heterogeneity_030_seed0_18000s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/heterogeneity_030_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/heterogeneity_030_seed0_18000s",
+          "checkpoint": "g-finished-00008000-018000000-9e022c5434a5",
+          "condition": "heterogeneity_030",
+          "cpu": 5,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-018000000-9e022c5434a5",
+            "manifest_sha256": "d201683bb96c6604f6fc390f806e12a31d4ede059eab38a31ad64e6901bcd344"
+          },
+          "expected_final_step": 18000000,
+          "id": "heterogeneity_030_seed0_18000s",
+          "identity": {
+            "affinity": [
+              5
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/heterogeneity_030_seed0_18000s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/heterogeneity_030_seed0_18000s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/heterogeneity_030_seed0_18000s"
+            ],
+            "hostname": "Eccles",
+            "pid": 1179960,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 990064,
+            "proc_start_ticks": "512662183",
+            "proc_stat": "1179960 (python3) R 990064 990064 990064 0 -1 4194304 4586 110 0 0 8 0 0 0 20 0 1 0 512662183 115630080 7680 18446744073709551615 94190482624512 94190485446061 140724514438944 0 0 0 0 16781313 16386 0 0 0 17 5 0 0 0 0 0 94190487808016 94190488091960 94190514143232 140724514442599 140724514443156 140724514443156 140724514447335 0\n",
+            "sid": 990064,
+            "utc": "2026-09-19T05:32:20.810034+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/heterogeneity_030_seed0_18000s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/heterogeneity_030_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/heterogeneity_030_seed0_18000s",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/heterogeneity_030_seed0_18000s.json",
+          "status": "validated",
+          "step": 18000000,
+          "updated": "2026-09-19T18:22:57.714453+00:00"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/pf_strength_half_seed0_18000s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/pf_strength_half_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/pf_strength_half_seed0_18000s",
+          "checkpoint": "g-finished-00008000-018000000-73880352f4e9",
+          "condition": "pf_strength_half",
+          "cpu": 16,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-018000000-73880352f4e9",
+            "manifest_sha256": "93c5da07fab69378c7885363b49c3676c617baae9a371899e9e1848cc736523e"
+          },
+          "expected_final_step": 18000000,
+          "id": "pf_strength_half_seed0_18000s",
+          "identity": {
+            "affinity": [
+              16
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/pf_strength_half_seed0_18000s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/pf_strength_half_seed0_18000s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/pf_strength_half_seed0_18000s"
+            ],
+            "hostname": "Eccles",
+            "pid": 1192047,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 990064,
+            "proc_start_ticks": "512938984",
+            "proc_stat": "1192047 (python3) R 990064 990064 990064 0 -1 4194304 4466 110 0 0 7 2 0 0 20 0 1 0 512938984 115634176 7808 18446744073709551615 94854913183744 94854916005293 140732307334192 0 0 0 0 16781313 16386 0 0 0 17 16 0 0 0 0 0 94854918367248 94854918651192 94854934208512 140732307336554 140732307337108 140732307337108 140732307341287 0\n",
+            "sid": 990064,
+            "utc": "2026-09-19T06:18:28.917701+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/pf_strength_half_seed0_18000s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/pf_strength_half_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/pf_strength_half_seed0_18000s",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/pf_strength_half_seed0_18000s.json",
+          "status": "validated",
+          "step": 18000000,
+          "updated": "2026-09-19T19:49:07.703595+00:00"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/pf_strength_double_seed0_18000s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/pf_strength_double_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/pf_strength_double_seed0_18000s",
+          "checkpoint": "g-finished-00008000-018000000-df7dc8770305",
+          "condition": "pf_strength_double",
+          "cpu": 17,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-018000000-df7dc8770305",
+            "manifest_sha256": "96bdcbdbb357d551c90e8d5683dd8ff53407d3e71340beceb18cc67af14ffafb"
+          },
+          "expected_final_step": 18000000,
+          "id": "pf_strength_double_seed0_18000s",
+          "identity": {
+            "affinity": [
+              17
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/pf_strength_double_seed0_18000s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/pf_strength_double_seed0_18000s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/pf_strength_double_seed0_18000s"
+            ],
+            "hostname": "Eccles",
+            "pid": 1192049,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 990064,
+            "proc_start_ticks": "512938987",
+            "proc_stat": "1192049 (python3) R 990064 990064 990064 0 -1 4194304 4585 110 0 0 8 1 0 0 20 0 1 0 512938987 115630080 7680 18446744073709551615 94700632735744 94700635557293 140722805716208 0 0 0 0 16781313 16386 0 0 0 17 17 0 0 0 0 0 94700637919248 94700638203192 94700650541056 140722805722468 140722805723028 140722805723028 140722805727207 0\n",
+            "sid": 990064,
+            "utc": "2026-09-19T06:18:28.926313+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/pf_strength_double_seed0_18000s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/runs/pf_strength_double_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/analysis/pf_strength_double_seed0_18000s",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/specs/pf_strength_double_seed0_18000s.json",
+          "status": "validated",
+          "step": 18000000,
+          "updated": "2026-09-19T19:49:04.013667+00:00"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/analysis/heterogeneity_015_pf_strength_double_seed0_18000s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/runs/heterogeneity_015_pf_strength_double_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/analysis/heterogeneity_015_pf_strength_double_seed0_18000s",
+          "checkpoint": "g-finished-00008000-018000000-84d8265fc0b1",
+          "condition": "heterogeneity_015_pf_strength_double",
+          "cpu": 4,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-018000000-84d8265fc0b1",
+            "manifest_sha256": "3cf029c093bb8f7d2b56b6bfebe87ff78a19512a3dcef4f32075d8a111cdc4bc"
+          },
+          "expected_final_step": 18000000,
+          "id": "heterogeneity_015_pf_strength_double_seed0_18000s",
+          "identity": {
+            "affinity": [
+              4
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/specs/heterogeneity_015_pf_strength_double_seed0_18000s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/runs/heterogeneity_015_pf_strength_double_seed0_18000s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/analysis/heterogeneity_015_pf_strength_double_seed0_18000s"
+            ],
+            "hostname": "Eccles",
+            "pid": 1354582,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 1354293,
+            "proc_start_ticks": "520033730",
+            "proc_stat": "1354582 (python3) R 1354293 1354293 1354293 0 -1 4194304 4437 108 0 0 6 2 0 0 20 0 1 0 520033730 115654656 7680 18446744073709551615 94335677071360 94335679892909 140735731877216 0 0 0 0 16781313 16386 0 0 0 17 4 0 0 0 0 0 94335682254864 94335682538808 94335710879744 140735731883199 140735731883924 140735731883924 140735731888103 0\n",
+            "sid": 1354293,
+            "utc": "2026-09-20T02:00:56.151226+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/runs/heterogeneity_015_pf_strength_double_seed0_18000s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/runs/heterogeneity_015_pf_strength_double_seed0_18000s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/analysis/heterogeneity_015_pf_strength_double_seed0_18000s",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/specs/heterogeneity_015_pf_strength_double_seed0_18000s.json",
+          "status": "validated",
+          "step": 18000000,
+          "updated": "2026-09-20T13:24:39.210322+00:00"
+        }
+      ]
+    }
+  ],
+  "completed_stages": [
+    "setup",
+    "cleaner",
+    "tests",
+    "optimizer",
+    "validation",
+    "experiment_runner",
+    "successful_completion",
+    "analyst",
+    "cascade_cleaner",
+    "cascade_tests",
+    "cascade_optimizer",
+    "cascade_validation",
+    "cascade_analyst",
+    "realtime_optimizer",
+    "realtime_validation"
+  ],
+  "launch_decisions": {
+    "burn_in_s": 8.0,
+    "checkpoint_retention": "Preserve existing artifacts; generation interval/retention to be sized and explicitly defined by experiment_runner without deleting pre-existing experimental data",
+    "compute_host_or_partition": "Eccles",
+    "conditions": "Replacement: homeostatic PF weight scaling; identical IO conductances and baseline PF gain",
+    "cpu_limit": 4,
+    "max_concurrent_jobs": 1,
+    "max_storage_bytes": 25769803776,
+    "min_free_disk_bytes": 21474836480,
+    "ram_limit_bytes": 34359738368,
+    "scheduler_policy": "User confirms standalone compute host; scheduler not required",
+    "seed_count_per_condition": 1,
+    "seeds": [
+      0
+    ],
+    "selected_conditions": [
+      "homeostatic_scaling"
+    ],
+    "simulated_duration_s": 14400.0,
+    "storage_root": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign",
+    "time_basis": "simulated_biological_time_per_condition",
+    "trial_count": 1,
+    "wall_clock_budget_campaign_s": null,
+    "wall_clock_budget_per_trial_s": 172800
+  },
+  "next_resume_command": "cd /home/sk57289/io_equilibrium_sim && OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 python3 results/workflow_campaign/cascade_20260921T145424Z/comparison_analysis/analyze_comparison.py --campaign /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z",
+  "notes": [
+    "Resume commands are saved instructions, not launched processes or authorization.",
+    "No model, reasoning, permission, or global configuration overrides were installed.",
+    "Run-level resume commands must be implemented and tested by experiment_runner before launch.",
+    "Latest user-supplied setup-only instructions supersede on-disk historical execution authorization. Earlier completed cleanup and optimization evidence is preserved; no long runs launched.",
+    "Latest request supersedes previous setup-only note; prior evidence remains intact."
+  ],
+  "realtime_campaign": {
+    "analysis_after_all_runs": true,
+    "manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/campaign.json",
+    "prepared": "docs/agent_reports/evidence/realtime_runner_20260921/prepared_campaign.json",
+    "progress": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/control/progress.json",
+    "report": "docs/agent_reports/realtime_experiment_report.md",
+    "status": "running"
+  },
+  "resource_policy": {
+    "cpu_threads_per_job": 1,
+    "initial_concurrency": 4,
+    "max_concurrency": 4,
+    "memory_per_job_limit_bytes": 8589934592,
+    "note": "Pilot must demonstrate safe memory/disk/throughput before increasing concurrency. 48-hour wall cap per trial is a safety limit, not a biological horizon. Stop and revise with user if projected campaign exceeds these ceilings; do not shorten 18000 simulated seconds.",
+    "pilot_validated": true,
+    "source": "User delegated resource/storage choices after confirming standalone host; coordinator chose conservative initial ceilings based on inspected hardware/disk"
+  },
+  "run_resume_commands": [
+    "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/runs/homeostatic_scaling_seed0_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/analysis/homeostatic_scaling_seed0_14400s"
+  ],
+  "runs": [
+    {
+      "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/analysis/homeostatic_scaling_seed0_14400s",
+      "analysis_complete": true,
+      "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/runs/homeostatic_scaling_seed0_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/analysis/homeostatic_scaling_seed0_14400s",
+      "checkpoint": "g-finished-00008000-014400000-d380d04ed26b",
+      "condition": "homeostatic_scaling",
+      "cpu": 4,
+      "current_checkpoint": {
+        "generation": "g-finished-00008000-014400000-d380d04ed26b",
+        "manifest_sha256": "897fa093bc38ec345a690080efeefaa0305d3541b9e0f9b9a9b95ffd09e7757d"
+      },
+      "expected_final_step": 14400000,
+      "id": "homeostatic_scaling_seed0_14400s",
+      "identity": {
+        "affinity": [
+          4
+        ],
+        "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+        "command": [
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/source/experiments/run_background_campaign.py",
+          "run",
+          "--spec",
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/specs/homeostatic_scaling_seed0_14400s.json",
+          "--out",
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/runs/homeostatic_scaling_seed0_14400s",
+          "--analysis",
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/analysis/homeostatic_scaling_seed0_14400s"
+        ],
+        "hostname": "Eccles",
+        "pid": 1399212,
+        "pid_namespace": "pid:[4026531836]",
+        "ppid": 1399211,
+        "proc_start_ticks": "529549403",
+        "proc_stat": "1399212 (python3) R 1399211 1399211 1399211 0 -1 4194304 4470 108 0 0 7 1 0 0 20 0 1 0 529549403 115617792 7680 18446744073709551615 94673995177984 94673997999533 140728981295648 0 0 0 0 16781313 16386 0 0 0 17 4 0 0 0 0 0 94674000361488 94674000645432 94674010292224 140728981298525 140728981299092 140728981299092 140728981303271 0\n",
+        "sid": 1399211,
+        "utc": "2026-09-21T04:26:52.889555+00:00"
+      },
+      "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/runs/homeostatic_scaling_seed0_14400s",
+      "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/runs/homeostatic_scaling_seed0_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/analysis/homeostatic_scaling_seed0_14400s",
+      "seed": 0,
+      "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/specs/homeostatic_scaling_seed0_14400s.json",
+      "status": "validated",
+      "step": 14400000,
+      "updated": "2026-09-21T13:35:38.476283+00:00"
+    }
+  ],
+  "schema_version": 1,
+  "source_edit_owner": null,
+  "stages": {
+    "analyst": {
+      "campaign_id": "homeostasis_20260921T034911Z",
+      "completed_at_utc": "2026-09-21T13:41:30.877150+00:00",
+      "evidence": [
+        "docs/agent_reports/evidence/homeostasis_20260921T033702Z/restart_reconciliation_20260921.json",
+        "docs/agent_reports/evidence/homeostasis_drift_20260921/diagnosis.json",
+        "docs/agent_reports/evidence/homeostasis_drift_20260921/diagnose.py",
+        "docs/agent_reports/evidence/homeostasis_drift_20260921/drift_attribution.png"
+      ],
+      "prior_record": {
+        "completed_at_utc": null,
+        "evidence": [],
+        "note": "Interim final_report.md is coordinator status only; analyst synthesis follows successful completion.",
+        "report": "docs/agent_reports/final_report.md",
+        "resume_command": "codex -C /home/sk57289/io_equilibrium_sim 'Use the analyst custom agent after verifying successful completion in WORKFLOW.md and progress.json. Read all three agent reports and HANDOFF_drift_diagnosis.rtf; write final_report.md without changing simulation source or raw data.'",
+        "status": "deferred_until_nine_runs_complete"
+      },
+      "report": "docs/agent_reports/homeostasis_drift_report.md",
+      "resume_command": "cd /home/sk57289/io_equilibrium_sim && /usr/bin/python3 docs/agent_reports/evidence/homeostasis_drift_20260921/diagnose.py",
+      "run_ids": [
+        "homeostatic_scaling_seed0_14400s",
+        "homeostatic_scaling_pilot30s"
+      ],
+      "scope": "User-selected completed homeostasis run and pilot drift diagnosis; historical final_report.md preserved",
+      "simulation_resume_disposition": "Not applicable: user selected completed result; no duplicate or restart.",
+      "status": "complete"
+    },
+    "cascade_analyst": {
+      "analysis_complete": "results/workflow_campaign/cascade_20260921T145424Z/comparison_analysis/ANALYSIS_COMPLETE.json",
+      "blockers": [],
+      "completed_at_utc": "2026-09-21T15:21:45.475734+00:00",
+      "figure": "results/workflow_campaign/cascade_20260921T145424Z/comparison_analysis/network_comparison.png",
+      "report": "docs/agent_reports/cascade_comparison_report.md",
+      "report_sha256": "dfd4fcd226a763e08128eb56f51db63ef29fa23174a1c43951ffcb5fb760cd80",
+      "resume_command": "cd /home/sk57289/io_equilibrium_sim && OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 python3 results/workflow_campaign/cascade_20260921T145424Z/comparison_analysis/analyze_comparison.py --campaign /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z",
+      "scope": "Completed focused comparison only; no four-hour cascade run or default change",
+      "status": "complete",
+      "summary": "results/workflow_campaign/cascade_20260921T145424Z/comparison_analysis/summary.json",
+      "validation": "Independent raw-array metric reproduction, hashes, finite values, timestamps, figure and report links audited"
+    },
+    "cascade_cleaner": {
+      "baseline_tests": {
+        "command": "python3 -m unittest discover -s tests -q",
+        "duration_s": 487.99931250233203,
+        "environment_overrides": {
+          "MKL_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1",
+          "PYTHONDONTWRITEBYTECODE": "1"
+        },
+        "exit_code": 0,
+        "source_identity": "baseline_source.json",
+        "start_utc": "2026-09-21T14:16:29.562573+00:00"
+      },
+      "blockers": [],
+      "completed_at_utc": "2026-09-21T14:34:12.009739+00:00",
+      "deletion_authorization": {
+        "scope": "All exact file entries in bulky_candidates.json plus bytecode cache_audit.json; preserve scripts, metrics, reports, JSON manifests, logs, frozen source and results/",
+        "source": "Coordinator relayed user response to explicit 1.33 GiB inventory proposal",
+        "user_quote": "Delete the old test dumps; keep scientific runs",
+        "utc": "2026-09-21T14:20:02.325702+00:00"
+      },
+      "deletion_manifest": "docs/agent_reports/evidence/cascade_cleanup_20260921/deletion_manifest.json",
+      "evidence": "docs/agent_reports/evidence/cascade_cleanup_20260921",
+      "final_verification": "docs/agent_reports/evidence/cascade_cleanup_20260921/final_verification.json",
+      "next_gate": "cascade_tests",
+      "post_cleanup_tests": {
+        "command": "python3 -m unittest discover -s tests -q",
+        "duration_s": 495.59940533712506,
+        "environment_overrides": {
+          "MKL_NUM_THREADS": "1",
+          "OMP_NUM_THREADS": "1",
+          "OPENBLAS_NUM_THREADS": "1",
+          "PYTHONDONTWRITEBYTECODE": "1"
+        },
+        "exit_code": 0,
+        "source_identity": "post_cleanup_source.json",
+        "start_utc": "2026-09-21T14:25:02.626411+00:00"
+      },
+      "raw_scientific_runs_preserved": true,
+      "removed_bytes": 1430432567,
+      "removed_files": 574,
+      "report": "docs/agent_reports/cascade_cleanup_report.md",
+      "resume_command": "cd /home/sk57289/io_equilibrium_sim && python3 -m unittest discover -s tests -q",
+      "scientific_source_unchanged": true,
+      "source_tree_sha256": "b8fb0d8aa4815dfe5cc7d28f58a85fd31749cfea97aa7397620e070641d0ac38",
+      "started_at_utc": "2026-09-21T14:16:29.383973+00:00",
+      "status": "complete",
+      "test_count_each": 105
+    },
+    "cascade_coordinator_acceptance": {
+      "assay_conditions": 24,
+      "blockers": [],
+      "comparison_marker_sha256": "99560d6435c62c6c26e762948ff2d7458a1fd3e2a1f1edd96c14c66d966eada4",
+      "full_unittest_exit_code": 0,
+      "full_unittest_tests": 118,
+      "git_diff_check_exit_code": 0,
+      "network_runs": 8,
+      "pilots": 4,
+      "report": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/cascade_comparison_report.md",
+      "report_sha256": "dfd4fcd226a763e08128eb56f51db63ef29fa23174a1c43951ffcb5fb760cd80",
+      "reviewed_figures": [
+        "assay_analysis/comparison.png",
+        "comparison_analysis/network_comparison.png"
+      ],
+      "scientific_source_matches_frozen": true,
+      "status": "accepted",
+      "utc": "2026-09-21T15:22:21.892376+00:00"
+    },
+    "cascade_focused_comparison": {
+      "assay_analysis": "results/workflow_campaign/cascade_20260921T145424Z/assay_analysis/ANALYSIS_COMPLETE.json",
+      "assay_complete": "results/workflow_campaign/cascade_20260921T145424Z/assay/COMPLETE.json",
+      "assay_completion_audit": "docs/agent_reports/evidence/cascade_validation_20260921/assay_audit.json",
+      "assay_log": "docs/agent_reports/evidence/cascade_validation_20260921/assay.log",
+      "assay_retention_s_each": 600,
+      "assay_seeds": [
+        0,
+        1,
+        2
+      ],
+      "campaign_manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/campaign.json",
+      "completed_assay_conditions": 24,
+      "completed_at_utc": "2026-09-21T15:14:10.203381+00:00",
+      "completed_network_runs": 8,
+      "completed_pilots": 4,
+      "concurrency": 4,
+      "four_hour_repeats_authorized": false,
+      "launch_gate": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/cascade_validation_20260921/launch_gate.json",
+      "network_completion_audit": "docs/agent_reports/evidence/cascade_validation_20260921/completion_audit.json",
+      "network_horizon_s": 120,
+      "network_last_checked_at_utc": "2026-09-21T15:09:52.155480+00:00",
+      "network_progress_path": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/control/progress.json",
+      "network_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 experiments/run_background_campaign.py launch --campaign /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/campaign.json --resume",
+      "network_runs": [
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/additive_seed0_120s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/additive_seed0_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/additive_seed0_120s",
+          "checkpoint": "g-finished-00008000-000120000-f9fe13cd2490",
+          "condition": "additive",
+          "cpu": 4,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-000120000-f9fe13cd2490",
+            "manifest_sha256": "f6883a9b3cc22b6c745b1efb057522720ce203111c49990aeca956a978698eb1"
+          },
+          "expected_final_step": 120000,
+          "id": "additive_seed0_120s",
+          "identity": {
+            "affinity": [
+              4
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/additive_seed0_120s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/additive_seed0_120s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/additive_seed0_120s"
+            ],
+            "hostname": "Eccles",
+            "pid": 1448090,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 1448087,
+            "proc_start_ticks": "533342485",
+            "proc_stat": "1448090 (python3) R 1448087 1448087 1448087 0 -1 4194304 4488 108 0 0 7 2 0 0 20 0 1 0 533342485 115634176 7808 18446744073709551615 94546824527872 94546827349421 140735798673984 0 0 0 0 16781313 16386 0 0 0 17 4 0 0 0 0 0 94546829711376 94546829995320 94546856542208 140735798680980 140735798681492 140735798681492 140735798685671 0\n",
+            "sid": 1448087,
+            "utc": "2026-09-21T14:59:03.945529+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/additive_seed0_120s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/additive_seed0_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/additive_seed0_120s",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/additive_seed0_120s.json",
+          "status": "validated",
+          "step": 120000,
+          "updated": "2026-09-21T15:04:33.427430+00:00"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/binary_seed0_120s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/binary_seed0_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/binary_seed0_120s",
+          "checkpoint": "g-finished-00008000-000120000-5d646656acf6",
+          "condition": "binary",
+          "cpu": 5,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-000120000-5d646656acf6",
+            "manifest_sha256": "995e0ddbf4f5ba101e563f54788dbd56a67e951ce6dc7a054d5edbcaf44adc1e"
+          },
+          "expected_final_step": 120000,
+          "id": "binary_seed0_120s",
+          "identity": {
+            "affinity": [
+              5
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/binary_seed0_120s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/binary_seed0_120s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/binary_seed0_120s"
+            ],
+            "hostname": "Eccles",
+            "pid": 1448091,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 1448087,
+            "proc_start_ticks": "533342486",
+            "proc_stat": "1448091 (python3) R 1448087 1448087 1448087 0 -1 4194304 4496 111 0 0 8 1 0 0 20 0 1 0 533342486 115642368 7808 18446744073709551615 94679742513152 94679745334701 140724909266608 0 0 0 0 16781313 16386 0 0 0 17 5 0 0 0 0 0 94679747696656 94679747980600 94679762071552 140724909272474 140724909272980 140724909272980 140724909277159 0\n",
+            "sid": 1448087,
+            "utc": "2026-09-21T14:59:04.013524+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/binary_seed0_120s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/binary_seed0_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/binary_seed0_120s",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/binary_seed0_120s.json",
+          "status": "validated",
+          "step": 120000,
+          "updated": "2026-09-21T15:04:47.684428+00:00"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/abbott_cascade_seed0_120s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/abbott_cascade_seed0_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/abbott_cascade_seed0_120s",
+          "checkpoint": "g-finished-00008000-000120000-f1bab050fa55",
+          "condition": "abbott_cascade",
+          "cpu": 16,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-000120000-f1bab050fa55",
+            "manifest_sha256": "aa67753185f29aef6f4407ba07ecaa5c3a68329bb03f38c8bbd5bbfaf22bc5fc"
+          },
+          "expected_final_step": 120000,
+          "id": "abbott_cascade_seed0_120s",
+          "identity": {
+            "affinity": [
+              16
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/abbott_cascade_seed0_120s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/abbott_cascade_seed0_120s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/abbott_cascade_seed0_120s"
+            ],
+            "hostname": "Eccles",
+            "pid": 1448092,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 1448087,
+            "proc_start_ticks": "533342488",
+            "proc_stat": "1448092 (python3) R 1448087 1448087 1448087 0 -1 4194304 4488 109 0 0 9 0 0 0 20 0 1 0 533342488 115724288 7808 18446744073709551615 94307790929920 94307793751469 140736658597856 0 0 0 0 16781313 16386 0 0 0 17 16 0 0 0 0 0 94307796113424 94307796397368 94307801595904 140736658599298 140736658599828 140736658599828 140736658604007 0\n",
+            "sid": 1448087,
+            "utc": "2026-09-21T14:59:04.034074+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/abbott_cascade_seed0_120s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/abbott_cascade_seed0_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/abbott_cascade_seed0_120s",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/abbott_cascade_seed0_120s.json",
+          "status": "validated",
+          "step": 120000,
+          "updated": "2026-09-21T15:05:03.903303+00:00"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/mauk_cascade_seed0_120s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/mauk_cascade_seed0_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/mauk_cascade_seed0_120s",
+          "checkpoint": "g-finished-00008000-000120000-73d933e1e21c",
+          "condition": "mauk_cascade",
+          "cpu": 17,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-000120000-73d933e1e21c",
+            "manifest_sha256": "34879e63467e84dcf150c993341edea02014bb018e89337e2e9ef36336c994c1"
+          },
+          "expected_final_step": 120000,
+          "id": "mauk_cascade_seed0_120s",
+          "identity": {
+            "affinity": [
+              17
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/mauk_cascade_seed0_120s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/mauk_cascade_seed0_120s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/mauk_cascade_seed0_120s"
+            ],
+            "hostname": "Eccles",
+            "pid": 1448093,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 1448087,
+            "proc_start_ticks": "533342492",
+            "proc_stat": "1448093 (python3) R 1448087 1448087 1448087 0 -1 4194304 4489 109 0 0 7 1 0 0 20 0 1 0 533342492 115417088 7936 18446744073709551615 94465570738176 94465573559725 140721476871136 0 0 0 0 16781313 16386 0 0 0 17 17 0 0 0 0 0 94465575921680 94465576205624 94465609408512 140721476873608 140721476874132 140721476874132 140721476878311 0\n",
+            "sid": 1448087,
+            "utc": "2026-09-21T14:59:04.054190+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/mauk_cascade_seed0_120s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/mauk_cascade_seed0_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/mauk_cascade_seed0_120s",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/mauk_cascade_seed0_120s.json",
+          "status": "validated",
+          "step": 120000,
+          "updated": "2026-09-21T15:05:04.108238+00:00"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/additive_seed1_120s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/additive_seed1_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/additive_seed1_120s",
+          "checkpoint": "g-finished-00008000-000120000-dc4f718ba31b",
+          "condition": "additive",
+          "cpu": 4,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-000120000-dc4f718ba31b",
+            "manifest_sha256": "5bf598f6c1ad1268213abb3c1571537cae6a69a3e8590fdcf232a7e7e2188402"
+          },
+          "expected_final_step": 120000,
+          "id": "additive_seed1_120s",
+          "identity": {
+            "affinity": [
+              4
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/additive_seed1_120s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/additive_seed1_120s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/additive_seed1_120s"
+            ],
+            "hostname": "Eccles",
+            "pid": 1450739,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 1448087,
+            "proc_start_ticks": "533381538",
+            "proc_stat": "1450739 (python3) R 1448087 1448087 1448087 0 -1 4194304 4491 109 0 0 7 2 0 0 20 0 1 0 533381538 115634176 7936 18446744073709551615 94895625785344 94895628606893 140734616946032 0 0 0 0 16781313 16386 0 0 0 17 4 0 0 0 0 0 94895630968848 94895631252792 94895649865728 140734616948116 140734616948628 140734616948628 140734616952807 0\n",
+            "sid": 1448087,
+            "utc": "2026-09-21T15:05:34.342851+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/additive_seed1_120s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/additive_seed1_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/additive_seed1_120s",
+          "seed": 1,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/additive_seed1_120s.json",
+          "status": "validated",
+          "step": 120000,
+          "updated": "2026-09-21T15:11:04.834183+00:00"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/binary_seed1_120s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/binary_seed1_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/binary_seed1_120s",
+          "checkpoint": "g-finished-00008000-000120000-61075b338c5f",
+          "condition": "binary",
+          "cpu": 5,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-000120000-61075b338c5f",
+            "manifest_sha256": "0d7235b629d5365d71bf992b11513873b27a4444ce89ff006f60915ad08f6717"
+          },
+          "expected_final_step": 120000,
+          "id": "binary_seed1_120s",
+          "identity": {
+            "affinity": [
+              5
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/binary_seed1_120s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/binary_seed1_120s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/binary_seed1_120s"
+            ],
+            "hostname": "Eccles",
+            "pid": 1450740,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 1448087,
+            "proc_start_ticks": "533381539",
+            "proc_stat": "1450740 (python3) R 1448087 1448087 1448087 0 -1 4194304 4497 111 0 0 8 0 0 0 20 0 1 0 533381539 115642368 7936 18446744073709551615 94445291356160 94445294177709 140724472534336 0 0 0 0 16781313 16386 0 0 0 17 5 0 0 0 0 0 94445296539664 94445296823608 94445325656064 140724472540570 140724472541076 140724472541076 140724472545255 0\n",
+            "sid": 1448087,
+            "utc": "2026-09-21T15:05:34.347169+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/binary_seed1_120s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/binary_seed1_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/binary_seed1_120s",
+          "seed": 1,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/binary_seed1_120s.json",
+          "status": "validated",
+          "step": 120000,
+          "updated": "2026-09-21T15:11:14.082625+00:00"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/abbott_cascade_seed1_120s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/abbott_cascade_seed1_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/abbott_cascade_seed1_120s",
+          "checkpoint": "g-finished-00008000-000120000-b1a2d7b03723",
+          "condition": "abbott_cascade",
+          "cpu": 16,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-000120000-b1a2d7b03723",
+            "manifest_sha256": "1a580bd9f5647d8e4435b7f5838410afe8a40209ccd1c895b07cffcf8eccdcf5"
+          },
+          "expected_final_step": 120000,
+          "id": "abbott_cascade_seed1_120s",
+          "identity": {
+            "affinity": [
+              16
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/abbott_cascade_seed1_120s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/abbott_cascade_seed1_120s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/abbott_cascade_seed1_120s"
+            ],
+            "hostname": "Eccles",
+            "pid": 1450909,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 1448087,
+            "proc_start_ticks": "533384545",
+            "proc_stat": "1450909 (python3) R 1448087 1448087 1448087 0 -1 4194304 4489 111 0 0 7 2 0 0 20 0 1 0 533384545 115724288 7936 18446744073709551615 94901858062336 94901860883885 140721391848288 0 0 0 0 16781313 16386 0 0 0 17 16 0 0 0 0 0 94901863245840 94901863529784 94901889331200 140721391857026 140721391857556 140721391857556 140721391861735 0\n",
+            "sid": 1448087,
+            "utc": "2026-09-21T15:06:04.534879+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/abbott_cascade_seed1_120s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/abbott_cascade_seed1_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/abbott_cascade_seed1_120s",
+          "seed": 1,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/abbott_cascade_seed1_120s.json",
+          "status": "validated",
+          "step": 120000,
+          "updated": "2026-09-21T15:12:04.277441+00:00"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/mauk_cascade_seed1_120s",
+          "analysis_complete": true,
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/mauk_cascade_seed1_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/mauk_cascade_seed1_120s",
+          "checkpoint": "g-finished-00008000-000120000-a3a1dabc03e2",
+          "condition": "mauk_cascade",
+          "cpu": 17,
+          "current_checkpoint": {
+            "generation": "g-finished-00008000-000120000-a3a1dabc03e2",
+            "manifest_sha256": "c3b9e5227701ac7715e3e73bcd4e801a6e562fc6c339fe9788d01e55454c4628"
+          },
+          "expected_final_step": 120000,
+          "id": "mauk_cascade_seed1_120s",
+          "identity": {
+            "affinity": [
+              17
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/mauk_cascade_seed1_120s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/mauk_cascade_seed1_120s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/mauk_cascade_seed1_120s"
+            ],
+            "hostname": "Eccles",
+            "pid": 1450910,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 1448087,
+            "proc_start_ticks": "533384547",
+            "proc_stat": "1450910 (python3) R 1448087 1448087 1448087 0 -1 4194304 4491 111 0 0 8 1 0 0 20 0 1 0 533384547 115417088 7936 18446744073709551615 94300595855360 94300598676909 140735275839440 0 0 0 0 16781313 16386 0 0 0 17 17 0 0 0 0 0 94300601038864 94300601322808 94300624154624 140735275842952 140735275843476 140735275843476 140735275847655 0\n",
+            "sid": 1448087,
+            "utc": "2026-09-21T15:06:04.543383+00:00"
+          },
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/mauk_cascade_seed1_120s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/runs/mauk_cascade_seed1_120s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/analysis/mauk_cascade_seed1_120s",
+          "seed": 1,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/specs/mauk_cascade_seed1_120s.json",
+          "status": "validated",
+          "step": 120000,
+          "updated": "2026-09-21T15:12:04.482231+00:00"
+        }
+      ],
+      "network_seeds": [
+        0,
+        1
+      ],
+      "network_started_at_utc": "2026-09-21T14:59:03.599616+00:00",
+      "pilot_gate": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/cascade_validation_20260921/pilot_gate.json",
+      "pilot_log": "docs/agent_reports/evidence/cascade_validation_20260921/pilots.log",
+      "source_snapshot": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source",
+      "started_at_utc": "2026-09-21T14:54:55.833027+00:00",
+      "status": "complete",
+      "supervisor_identity": {
+        "affinity": [
+          4
+        ],
+        "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+        "command": [
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source/experiments/run_background_campaign.py",
+          "supervise",
+          "--campaign",
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/campaign.json"
+        ],
+        "hostname": "Eccles",
+        "pid": 1448087,
+        "pid_namespace": "pid:[4026531836]",
+        "ppid": 1,
+        "proc_start_ticks": "533342474",
+        "proc_stat": "1448087 (python3) R 1 1448087 1448087 0 -1 4194304 4114 0 0 0 8 2 0 0 20 0 1 0 533342474 114098176 7424 18446744073709551615 94278748598272 94278751419821 140735052366800 0 0 0 0 16781312 2 0 0 0 17 4 0 0 0 0 0 94278753781776 94278754065720 94278771376128 140735052369546 140735052369812 140735052369812 140735052373991 0\n",
+        "sid": 1448087,
+        "utc": "2026-09-21T14:59:03.599487+00:00"
+      }
+    },
+    "cascade_implementation": {
+      "completed_at_utc": "2026-09-21T14:45:13.348343+00:00",
+      "evidence": "docs/agent_reports/evidence/cascade_implementation_20260921/focused_tests.log",
+      "focused_tests": 13,
+      "original_timing_tests": 11,
+      "pending": [
+        "fullsuite",
+        "independent_reference",
+        "frozen_baseline_exact_equivalence",
+        "pipeline_fault_recovery",
+        "source_freeze",
+        "pilots",
+        "focused_comparison"
+      ],
+      "report": "docs/agent_reports/cascade_implementation_report.md",
+      "resume_command": "cd /home/sk57289/io_equilibrium_sim && OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python3 -m unittest discover -s tests -q",
+      "scientific_campaigns_launched": false,
+      "status": "implemented_focused_tests_passed_pending_coordinator_validation"
+    },
+    "cascade_optimizer": {
+      "blockers": [],
+      "completed_at_utc": "2026-09-21T14:37:50.877364+00:00",
+      "decision": "accepted_no_op",
+      "evidence": "docs/agent_reports/evidence/cascade_optimizer_20260921",
+      "full_tests_reused": true,
+      "new_speedup_claim": null,
+      "profile": "docs/agent_reports/evidence/cascade_optimizer_20260921/profile/measurement.json",
+      "profiled_wall_s": 7.033184009604156,
+      "report": "docs/agent_reports/cascade_performance_report.md",
+      "scientific_edits_planned": false,
+      "scientific_source_unchanged": true,
+      "source_edit_owner_released": true,
+      "source_tree_sha256": "b8fb0d8aa4815dfe5cc7d28f58a85fd31749cfea97aa7397620e070641d0ac38",
+      "started_at_utc": "2026-09-21T14:35:48.387298+00:00",
+      "status": "complete"
+    },
+    "cascade_post_implementation_validation": {
+      "assay_reordering": "docs/agent_reports/evidence/cascade_validation_20260921/assay_reordering.json",
+      "baseline_cases": [
+        "default",
+        "homeostasis",
+        "softbound"
+      ],
+      "baseline_equivalence": "docs/agent_reports/evidence/cascade_validation_20260921/baseline_equivalence.json",
+      "baseline_status": "passed",
+      "completed_at_utc": "2026-09-21T14:54:55.832990+00:00",
+      "full_suite_exit_code": 0,
+      "full_suite_log": "docs/agent_reports/evidence/cascade_validation_20260921/full_tests.log",
+      "full_suite_status": "passed",
+      "full_suite_tests": 118,
+      "full_suite_wall_s": 497.367,
+      "recovery": "docs/agent_reports/evidence/cascade_validation_20260921/recovery.json",
+      "recovery_cases": 8,
+      "recovery_status": "passed",
+      "resume_command": "cd /home/sk57289/io_equilibrium_sim && env PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 python3 -m unittest discover -s tests -q",
+      "source_hashes": {
+        "config.py": "fc3af3d9a97d777938bd79043372db591123bf76b37e923d6dd82959a35d8e8d",
+        "experiments/pipeline/__init__.py": "44ab539153ad6798c9f4fb6bbec5bc3ac340b0f47a5353a1e21a323bc44769b5",
+        "experiments/pipeline/analyze.py": "b9b0cd41a7610f795425129cfe8372c1b6b4a21789b15e7d9f40db1460ad647d",
+        "experiments/pipeline/common.py": "2a762ccdc3740f8c03ec9eb13d9a526c33ea4346f2c5a39628df683dbd75ef9c",
+        "experiments/pipeline/record.py": "173cbd0c9008ee30dc03f8d1116eb3f4fcfdc5bbaa51b81d0cc11ea03a5b1773",
+        "experiments/pipeline/runner.py": "dee69391cdcf5f2df069463224f8a3b304448f266bb1122fc862d74ae98c3ea9",
+        "experiments/pipeline/supervisor.py": "ebfa73485c9a0f08f526b01085db4737ddc6601120bc85fa36162b6a2be9c0d3",
+        "experiments/pipeline/validate.py": "20d5433a1f3d738c52a2a4831723d253fab70791f6b8e7b12c2f265953d09ce8",
+        "experiments/run_background_campaign.py": "6e7e526384acdbd924f64ca30fd6be67790ee479c0e8449a514094c88b7ae496",
+        "sim/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sim/analysis.py": "adbc7eca4d6ec17f94256470e238e9cbd0a1ca318c53d1ade9a192b0d948b6e6",
+        "sim/connectivity.py": "7fbae44d8fa85725c0a6fb48500f4c0348b8cc330dfbc70ff6ae9616d1308ff8",
+        "sim/homeostasis.py": "7912f31ae18711088241b9a26b2e153274d4854f5f2f1aaae8f8baaf85655b76",
+        "sim/io_channels.py": "3d2b417063b504cf11458d84b401143f13c586bf0dfbaab6308ae890340b9f1c",
+        "sim/io_coupling.py": "563e828253a70ad260b1312251686bacceb48c6b152c88a7d450b14d50161e10",
+        "sim/long_run.py": "edcb4595cc5921ab0f86aa079241c3ef36779c3ce0b5a26b7846c7faed7ba75f",
+        "sim/network_graph.py": "f97c95a48b05f34b17cf14e388678229507a19fbb0c39c2bdd09b12bd8023ce5",
+        "sim/network_viz.py": "0a0b825f851049ca8a4c00ef5ea5ac8b6eeee46c1e60174574dd74c23556eb52",
+        "sim/neurons.py": "8fb60950649480875e9937f1f6ce2cd1e8e697a2f8828bff66c8c93184ede52e",
+        "sim/plasticity.py": "3d965fa32cfcabf33a4b610d74045558b2e0d1ee6f5fa84ef242bba00c353945",
+        "sim/poisson_input.py": "8be5f0f950072ed9a9d6e4b131d6c3aacdfbd587873f78bdaa50e7eb5a2f5582",
+        "sim/recording.py": "ccc7a3ab2cc04a376faf519335d3405cfc55b18aa333f487cb820b2ee8f85608",
+        "sim/simulate.py": "2a8ab7a4641ff61606a17af2c364c1d041aae2b96467ea361e88ed6c0ae38765"
+      },
+      "status": "passed"
+    },
+    "cascade_successful_completion": {
+      "all_requested_focused_trials_complete": true,
+      "completed_at_utc": "2026-09-21T15:14:10.203435+00:00",
+      "evidence": [
+        "docs/agent_reports/evidence/cascade_validation_20260921/completion_audit.json",
+        "docs/agent_reports/evidence/cascade_validation_20260921/assay_audit.json"
+      ],
+      "status": "accepted"
+    },
+    "cascade_tests": {
+      "acceptance": "Coordinator independently reviewed unchanged 54 source hashes and both full suites; optimizer independently rechecked all 54 hashes.",
+      "baseline_exit_code": 0,
+      "completed_at_utc": "2026-09-21T14:35:48.387298+00:00",
+      "evidence": "docs/agent_reports/evidence/cascade_cleanup_20260921/final_verification.json",
+      "post_cleanup_exit_code": 0,
+      "report": "docs/agent_reports/cascade_cleanup_report.md",
+      "source_tree_sha256": "b8fb0d8aa4815dfe5cc7d28f58a85fd31749cfea97aa7397620e070641d0ac38",
+      "status": "accepted",
+      "test_count_each": 105
+    },
+    "cascade_validation": {
+      "baseline_exit_code": 0,
+      "completed_at_utc": "2026-09-21T14:37:50.877364+00:00",
+      "evidence": [
+        "docs/agent_reports/evidence/cascade_cleanup_20260921/final_verification.json",
+        "docs/agent_reports/evidence/cascade_optimizer_20260921/final_verification.json"
+      ],
+      "exact_source_unchanged": true,
+      "full_unittest_count_each": 105,
+      "post_cleanup_exit_code": 0,
+      "scope": "unchanged pre-cascade source only; implementation must repeat scientific validation",
+      "source_tree_sha256": "b8fb0d8aa4815dfe5cc7d28f58a85fd31749cfea97aa7397620e070641d0ac38",
+      "status": "accepted"
+    },
+    "cleaner": {
+      "baseline_exit_code": 0,
+      "baseline_log": "docs/agent_reports/evidence/cleaner_checks/baseline.log",
+      "baseline_process": {
+        "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+        "started_at_utc": "2026-09-18T07:37:53.375115+00:00",
+        "test_pid": 835078,
+        "test_proc_stat": "835078 (python3) R 835073 835073 835073 0 -1 4194304 44 0 0 0 0 0 0 0 20 0 1 0 504775464 6602752 0 18446744073709551615 94339821694976 94339824516525 140721435423536 0 0 0 0 0 0 0 0 0 17 57 0 0 0 0 0 94339826878480 94339827162424 94339843899392 140721435430652 140721435430693 140721435430693 140721435434983 0",
+        "wrapper_pid": 835073
+      },
+      "baseline_snapshot": "docs/agent_reports/evidence/workflow_start_20260918T073421Z",
+      "baseline_status": "passed",
+      "baseline_wall_s": 488.66947751957923,
+      "changed_files": [
+        "config.py",
+        "experiments/drift_figures.py",
+        "experiments/run_gap_weight_sweep.py"
+      ],
+      "completed_at_utc": "2026-09-18T07:56:39.083169+00:00",
+      "evidence": [
+        "docs/agent_reports/evidence/cleaner_static_review.json",
+        "docs/agent_reports/evidence/cleaner_checks/baseline.json",
+        "docs/agent_reports/evidence/cleaner_checks/post_cleanup.json",
+        "docs/agent_reports/evidence/cleaner_checks/cleanup.patch",
+        "docs/agent_reports/evidence/cleaner_checks/cleanup_ast_equivalence.json",
+        "docs/agent_reports/evidence/cleaner_checks/cli_smoke_checks.json",
+        "docs/agent_reports/evidence/cleaner_checks/final_verification.json"
+      ],
+      "next_gate": "tests",
+      "post_cleanup_exit_code": 0,
+      "post_cleanup_process": {
+        "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+        "started_at_utc": "2026-09-18T07:47:06.748415+00:00",
+        "test_pid": 837919,
+        "test_proc_stat": "837919 (python3) R 837913 837913 837913 0 -1 4194304 39 0 0 0 0 0 0 0 20 0 1 0 504830801 6602752 0 18446744073709551615 94917927956480 94917930778029 140729273059264 0 0 0 0 0 0 0 0 0 17 16 0 0 0 0 0 94917933139984 94917933423928 94917958017024 140729273061116 140729273061157 140729273061157 140729273065447 0",
+        "wrapper_pid": 837913
+      },
+      "post_cleanup_status": "passed",
+      "post_cleanup_wall_s": 495.21660038270056,
+      "report": "docs/agent_reports/cleanup_report.md",
+      "resume_command": "codex -C /home/sk57289/io_equilibrium_sim 'Use the cleaner custom agent for the cleaner stage only. Read AGENTS.md, WORKFLOW.md, progress.json and HANDOFF_drift_diagnosis.rtf. Run baseline and post-change tests. Do not start optimizer or experiments.'",
+      "source_edits_performed": true,
+      "source_hash_manifest": "docs/agent_reports/evidence/cleaner_checks/final_verification.json",
+      "source_tree_sha256": "9b5780224cd6da97ce773c88f498f15b02e6c34a97db23210858388d3b527472",
+      "started_at_utc": "2026-09-18T07:34:21.901700+00:00",
+      "status": "complete"
+    },
+    "experiment_runner": {
+      "campaign_manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/campaign.json",
+      "campaign_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 experiments/run_background_campaign.py launch --campaign /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/campaign.json --resume",
+      "campaign_status": "complete",
+      "completed_at_utc": "2026-09-21T13:36:02.605432+00:00",
+      "evidence": [
+        "docs/agent_reports/evidence/runner_checks/",
+        "docs/agent_reports/evidence/coordinator_resume_20260918/audit.json",
+        "docs/agent_reports/evidence/coordinator_resume_20260918/recovery_gate_review.json",
+        "docs/agent_reports/evidence/runner_checks/safeguards.json",
+        "docs/agent_reports/evidence/coordinator_resume_20260918/long_launch_gate_review.json",
+        "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/runner_checks/combined_20260920T015726Z/pilot_gate.json",
+        "docs/agent_reports/evidence/coordinator_resume_20260918/combined_launch_gate_review.json"
+      ],
+      "extension_checkpoint_pointer": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/runs/heterogeneity_015_pf_strength_double_seed0_18000s/CURRENT.json",
+      "extension_control_root": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/control",
+      "extension_evidence": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/runner_checks/combined_20260920T015726Z",
+      "extension_launch_evidence": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/runner_checks/combined_20260920T015726Z/long_launch_verified.json",
+      "extension_launch_review": "docs/agent_reports/evidence/coordinator_resume_20260918/combined_launch_gate_review.json",
+      "extension_manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/combined_campaign.json",
+      "extension_pilot_gate": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/runner_checks/combined_20260920T015726Z/pilot_gate.json",
+      "extension_pilot_identity": {
+        "affinity": [
+          4
+        ],
+        "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+        "command": [
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+          "supervise",
+          "--campaign",
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/pilot_campaign.json"
+        ],
+        "hostname": "Eccles",
+        "pid": 1353262,
+        "pid_namespace": "pid:[4026531836]",
+        "ppid": 1,
+        "proc_start_ticks": "520013268",
+        "proc_stat": "1353262 (python3) R 1 1353262 1353262 0 -1 4194304 4113 0 0 0 8 2 0 0 20 0 1 0 520013268 114106368 7424 18446744073709551615 94267029069824 94267031891373 140724199944832 0 0 0 0 16781312 2 0 0 0 17 4 0 0 0 0 0 94267034253328 94267034537272 94267058311168 140724199951961 140724199952276 140724199952276 140724199956455 0\n",
+        "sid": 1353262,
+        "utc": "2026-09-20T01:57:31.535611+00:00"
+      },
+      "extension_pilot_progress": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/runner_checks/combined_20260920T015726Z/pilot_progress.json",
+      "extension_projected_wall_s": 43606.173123791814,
+      "extension_started_at_utc": "2026-09-20T02:00:18.387748+00:00",
+      "extension_status": "long_run_active",
+      "extension_supervisor_identity": {
+        "affinity": [
+          4
+        ],
+        "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+        "command": [
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+          "supervise",
+          "--campaign",
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/combined_campaign.json"
+        ],
+        "hostname": "Eccles",
+        "pid": 1354293,
+        "pid_namespace": "pid:[4026531836]",
+        "ppid": 1,
+        "proc_start_ticks": "520029953",
+        "proc_stat": "1354293 (python3) R 1 1354293 1354293 0 -1 4194304 4118 0 0 0 8 2 0 0 20 0 1 0 520029953 114110464 7424 18446744073709551615 94056641519616 94056644341165 140724168497456 0 0 0 0 16781312 2 0 0 0 17 4 0 0 0 0 0 94056646703120 94056646987064 94056655380480 140724168502870 140724168503188 140724168503188 140724168507367 0\n",
+        "sid": 1354293,
+        "utc": "2026-09-20T02:00:18.387600+00:00"
+      },
+      "extension_worker_identity": {
+        "affinity": [
+          4
+        ],
+        "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+        "command": [
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+          "run",
+          "--spec",
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/specs/heterogeneity_015_pf_strength_double_seed0_18000s.json",
+          "--out",
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/runs/heterogeneity_015_pf_strength_double_seed0_18000s",
+          "--analysis",
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/analysis/heterogeneity_015_pf_strength_double_seed0_18000s"
+        ],
+        "hostname": "Eccles",
+        "pid": 1354582,
+        "pid_namespace": "pid:[4026531836]",
+        "ppid": 1354293,
+        "proc_start_ticks": "520033730",
+        "proc_stat": "1354582 (python3) R 1354293 1354293 1354293 0 -1 4194304 4437 108 0 0 6 2 0 0 20 0 1 0 520033730 115654656 7680 18446744073709551615 94335677071360 94335679892909 140735731877216 0 0 0 0 16781313 16386 0 0 0 17 4 0 0 0 0 0 94335682254864 94335682538808 94335710879744 140735731883199 140735731883924 140735731883924 140735731888103 0\n",
+        "sid": 1354293,
+        "utc": "2026-09-20T02:00:56.151226+00:00"
+      },
+      "failed_attempts": [
+        {
+          "evidence": "docs/agent_reports/evidence/runner_checks/failed_attempt_1_recovery_harness.log",
+          "gate": "recovery_harness",
+          "reason": "Exact comparator did not support immutable NumPy scalar-type objects in recorder schema; TypeError vars(), after scientific state and record arrays compared exactly. Correct comparator to check type objects by identity; no tolerance changes.",
+          "status": "resolved_exact_recovery_passed"
+        }
+      ],
+      "long_launch_gate": "accepted",
+      "long_launch_review": "docs/agent_reports/evidence/coordinator_resume_20260918/long_launch_gate_review.json",
+      "long_started_at_utc": "2026-09-18T16:41:13.034062+00:00",
+      "note": "Original eight validated/analysis complete; combined ninth active after8s burn. All9 retained in centralprogress. Automatic longvalidation/basic analysis and every300bio-second checkpoints active.",
+      "original_eight_completion_audit": "docs/agent_reports/evidence/coordinator_resume_20260918/original_campaign_completion_audit.json",
+      "pending_launch": {
+        "campaign_manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/pilot_campaign.json",
+        "command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 experiments/run_background_campaign.py launch --campaign /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/pilot_campaign.json",
+        "completed_at_utc": "2026-09-18T16:39:06.546666+00:00",
+        "duplicate_prevention": "One existing tool approval request may execute; reconcile it and pilot_control/supervisor_status.json before launching.",
+        "kind": "four_condition_30s_pilot",
+        "process_identity": {
+          "affinity": [
+            4
+          ],
+          "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+          "command": [
+            "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+            "supervise",
+            "--campaign",
+            "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/pilot_campaign.json"
+          ],
+          "hostname": "Eccles",
+          "pid": 988427,
+          "pid_namespace": "pid:[4026531836]",
+          "ppid": 1,
+          "proc_start_ticks": "508010744",
+          "proc_stat": "988427 (python3) R 1 988427 988427 0 -1 4194304 4116 0 0 0 7 1 0 0 20 0 1 0 508010744 114110464 7424 18446744073709551615 94318623997952 94318626819501 140735105588048 0 0 0 0 16781312 2 0 0 0 17 4 0 0 0 0 0 94318629181456 94318629465400 94318638055424 140735105592958 140735105593236 140735105593236 140735105597415 0\n",
+          "sid": 988427,
+          "utc": "2026-09-18T16:37:06.296953+00:00"
+        },
+        "status": "pilot_completed_long_launched"
+      },
+      "pilot_evidence": "docs/agent_reports/evidence/runner_checks/pilot_gate.json",
+      "pilot_progress_path": "docs/agent_reports/evidence/runner_checks/pilot_progress.json",
+      "pilot_status": "passed",
+      "prepared_campaign": "results/workflow_campaign/background_20260918T160421Z/campaign.json",
+      "recovery_evidence": "docs/agent_reports/evidence/runner_checks/recovery_latest.json",
+      "recovery_status": "passed",
+      "report": "docs/agent_reports/experiment_report.md",
+      "report_status": "homeostatic_replacement_complete",
+      "restart_reconciliation": "docs/agent_reports/evidence/homeostasis_20260921T033702Z/restart_reconciliation_20260921.json",
+      "resume_command": "codex -C /home/sk57289/io_equilibrium_sim 'Resume experiment_runner; latest user explicitly authorizes implementation and validation then five biological hours of background activity per condition; inspect progress and live identities before any launch.'",
+      "started_at_utc": "2026-09-18T15:52:11.028557+00:00",
+      "status": "complete",
+      "supervisor_identity": {
+        "affinity": [
+          4
+        ],
+        "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+        "command": [
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/source/experiments/run_background_campaign.py",
+          "supervise",
+          "--campaign",
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/campaign.json"
+        ],
+        "hostname": "Eccles",
+        "pid": 1399211,
+        "pid_namespace": "pid:[4026531836]",
+        "ppid": 1,
+        "proc_start_ticks": "529549392",
+        "proc_stat": "1399211 (python3) R 1 1399211 1399211 0 -1 4194304 4114 0 0 0 8 1 0 0 20 0 1 0 529549392 114114560 7424 18446744073709551615 94671690653696 94671693475245 140730828822352 0 0 0 0 16781312 2 0 0 0 17 4 0 0 0 0 0 94671695837200 94671696121144 94671705513984 140730828828290 140730828828564 140730828828564 140730828832743 0\n",
+        "sid": 1399211,
+        "utc": "2026-09-21T04:26:52.782048+00:00"
+      }
+    },
+    "homeostasis": {
+      "completed_at_utc": "2026-09-21T13:35:47.903046+00:00",
+      "completion_audit": "docs/agent_reports/evidence/homeostasis_20260921T033702Z/restart_reconciliation_20260921.json",
+      "condition": {
+        "homeostatic_rate_tau_s": 60.0,
+        "homeostatic_scaling": true,
+        "homeostatic_target_hz": 60.0,
+        "homeostatic_tau_s": 14400.0,
+        "homeostatic_update_s": 1.0,
+        "io_heterogeneity_cv": 0.0,
+        "pf_pkj_gain": 0.000137
+      },
+      "duration_s": 14400,
+      "evidence": "docs/agent_reports/evidence/homeostasis_20260921T033702Z",
+      "launch_verified": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/homeostasis_20260921T033702Z/launch_verified.json",
+      "manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/campaign.json",
+      "notification_status": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/progress_notifications/status.json",
+      "pilot_gate": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/homeostasis_20260921T033702Z/pilot_gate.json",
+      "progress_milestone_percent": 10,
+      "report": "docs/agent_reports/homeostasis_report.md",
+      "restart_disposition": "Original run was live at inspection and reached verified completion during inspection; no restart or duplicate launched.",
+      "seed": 0,
+      "source_hashes": {
+        "config.py": "d6cc341b48abc0f974ecb706f4f62b067a46a599a1d1af4297a449ae00454524",
+        "experiments/pipeline/__init__.py": "44ab539153ad6798c9f4fb6bbec5bc3ac340b0f47a5353a1e21a323bc44769b5",
+        "experiments/pipeline/analyze.py": "2b2733b93b09b236fdd5c25f2855fb4746b31a387ec9e6f268511949032517e6",
+        "experiments/pipeline/common.py": "2a762ccdc3740f8c03ec9eb13d9a526c33ea4346f2c5a39628df683dbd75ef9c",
+        "experiments/pipeline/record.py": "59c6a453129c74507d8357d60247713100303740f204d033124a053bb9f5f2ea",
+        "experiments/pipeline/runner.py": "89c568ca3ab3d98ff76f0fd42616af16e55e85d7bd47150e97dcafb9274721c2",
+        "experiments/pipeline/supervisor.py": "ebfa73485c9a0f08f526b01085db4737ddc6601120bc85fa36162b6a2be9c0d3",
+        "experiments/pipeline/validate.py": "c2431b4ec19cc2f1f77adffa925eab3e6ac4ec5c641399e44bba456460ed7ca4",
+        "experiments/run_background_campaign.py": "6e7e526384acdbd924f64ca30fd6be67790ee479c0e8449a514094c88b7ae496",
+        "sim/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sim/analysis.py": "adbc7eca4d6ec17f94256470e238e9cbd0a1ca318c53d1ade9a192b0d948b6e6",
+        "sim/connectivity.py": "7fbae44d8fa85725c0a6fb48500f4c0348b8cc330dfbc70ff6ae9616d1308ff8",
+        "sim/homeostasis.py": "7912f31ae18711088241b9a26b2e153274d4854f5f2f1aaae8f8baaf85655b76",
+        "sim/io_channels.py": "3d2b417063b504cf11458d84b401143f13c586bf0dfbaab6308ae890340b9f1c",
+        "sim/io_coupling.py": "563e828253a70ad260b1312251686bacceb48c6b152c88a7d450b14d50161e10",
+        "sim/long_run.py": "edcb4595cc5921ab0f86aa079241c3ef36779c3ce0b5a26b7846c7faed7ba75f",
+        "sim/network_graph.py": "f97c95a48b05f34b17cf14e388678229507a19fbb0c39c2bdd09b12bd8023ce5",
+        "sim/network_viz.py": "0a0b825f851049ca8a4c00ef5ea5ac8b6eeee46c1e60174574dd74c23556eb52",
+        "sim/neurons.py": "8fb60950649480875e9937f1f6ce2cd1e8e697a2f8828bff66c8c93184ede52e",
+        "sim/plasticity.py": "b746e2b45cf573765adb315087c7f4e5aa5f2c0c04e30482abd541c78678e7a0",
+        "sim/poisson_input.py": "8be5f0f950072ed9a9d6e4b131d6c3aacdfbd587873f78bdaa50e7eb5a2f5582",
+        "sim/recording.py": "ccc7a3ab2cc04a376faf519335d3405cfc55b18aa333f487cb820b2ee8f85608",
+        "sim/simulate.py": "87a42a750d609726cd7c7bc7fcc55213a9a8b399427b6e08ddce1fff6e80732a"
+      },
+      "status": "complete",
+      "watcher_identity": {
+        "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+        "pid": 1399351,
+        "proc_start_ticks": "529551651",
+        "thread": "01a0c1f8-8386-72d3-954f-d7ae6f28e8ea"
+      },
+      "worker_identity": {
+        "affinity": [
+          4
+        ],
+        "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+        "command": [
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/source/experiments/run_background_campaign.py",
+          "run",
+          "--spec",
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/specs/homeostatic_scaling_seed0_14400s.json",
+          "--out",
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/runs/homeostatic_scaling_seed0_14400s",
+          "--analysis",
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/analysis/homeostatic_scaling_seed0_14400s"
+        ],
+        "hostname": "Eccles",
+        "pid": 1399212,
+        "pid_namespace": "pid:[4026531836]",
+        "ppid": 1399211,
+        "proc_start_ticks": "529549403",
+        "proc_stat": "1399212 (python3) R 1399211 1399211 1399211 0 -1 4194304 4470 108 0 0 7 1 0 0 20 0 1 0 529549403 115617792 7680 18446744073709551615 94673995177984 94673997999533 140728981295648 0 0 0 0 16781313 16386 0 0 0 17 4 0 0 0 0 0 94674000361488 94674000645432 94674010292224 140728981298525 140728981299092 140728981299092 140728981303271 0\n",
+        "sid": 1399211,
+        "utc": "2026-09-21T04:26:52.889555+00:00"
+      }
+    },
+    "optimizer": {
+      "baseline_profile": "docs/agent_reports/evidence/optimizer_checks/baseline_profile_valid/profile.txt",
+      "baseline_snapshot": "docs/agent_reports/evidence/optimizer_checks/baseline_source",
+      "baseline_wall_s": [
+        9.93545642029494,
+        9.901664744131267,
+        9.926701795309782
+      ],
+      "candidate": "Sparse fired-coordinate lookup via flatnonzero/divmod; original arithmetic and full clipping retained",
+      "candidate_wall_s": [
+        9.092337674461305,
+        9.105931588448584,
+        9.07614500168711
+      ],
+      "changed_files": [
+        "sim/plasticity.py"
+      ],
+      "completed_at_utc": "2026-09-18T08:24:06.199852+00:00",
+      "evidence": [
+        "docs/agent_reports/evidence/optimizer_checks/baseline_manifest.json",
+        "docs/agent_reports/evidence/optimizer_checks/candidate_manifest.json",
+        "docs/agent_reports/evidence/optimizer_checks/optimization.patch",
+        "docs/agent_reports/evidence/optimizer_checks/batch_status.json",
+        "docs/agent_reports/evidence/optimizer_checks/paired_status.json",
+        "docs/agent_reports/evidence/optimizer_checks/final_verification.json",
+        "docs/agent_reports/evidence/optimizer_checks/plasticity_edges.json",
+        "docs/agent_reports/evidence/optimizer_checks/recording_audit.json",
+        "docs/agent_reports/evidence/optimizer_checks/recorder_replay.json",
+        "docs/agent_reports/evidence/optimizer_checks/full_unittest.log"
+      ],
+      "full_unittest_count": 97,
+      "full_unittest_exit_code": 0,
+      "full_unittest_wall_s": 489.61835290584713,
+      "measured_recorded_speedup": 1.0643876729329662,
+      "next_gate": "validation",
+      "paired_timing_status_file": "docs/agent_reports/evidence/optimizer_checks/paired_status.json",
+      "report": "docs/agent_reports/performance_report.md",
+      "resume_command": "codex -C /home/sk57289/io_equilibrium_sim 'Use the optimizer custom agent for the optimizer stage only after checking cleaner and tests acceptance in WORKFLOW.md and progress.json. Preserve the handoff constraints. Do not launch experiments.'",
+      "source_tree_sha256": "8e4102bd88e40dd077d0bbf56a3662cff898250a978f93f534d88738c3d2a993",
+      "speedup_basis": "Median of 3 CPU4-pinned full-size streaming runs per version; 1s burn+3s activity; exact equivalence; bounded estimate only",
+      "started_at_utc": "2026-09-18T07:57:00.286344+00:00",
+      "status": "complete",
+      "validation_status": "passed_pending_coordinator_acceptance",
+      "validation_status_file": "docs/agent_reports/evidence/optimizer_checks/batch_status.json"
+    },
+    "realtime_long_launch": {
+      "active_run_ids": [
+        "additive_seed0_14400s",
+        "binary_seed0_14400s",
+        "abbott_cascade_seed0_14400s",
+        "mauk_cascade_seed0_14400s"
+      ],
+      "campaign_progress": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/control/progress.json",
+      "campaign_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py launch --campaign /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/campaign.json --resume",
+      "completion_handoff": "docs/agent_reports/evidence/realtime_optimization_20260921/completion_handoff.md",
+      "gate": "docs/agent_reports/evidence/realtime_optimization_20260921/long_launch_gate.json",
+      "launch_verified": "docs/agent_reports/evidence/realtime_optimization_20260921/launch_verified.json",
+      "launched_at_utc": "2026-09-21T16:24:32.580309+00:00",
+      "manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/campaign.json",
+      "notification_status": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/control/progress_notifications/status.json",
+      "queued_run_ids": [
+        "additive_seed1_14400s",
+        "binary_seed1_14400s",
+        "abbott_cascade_seed1_14400s",
+        "mauk_cascade_seed1_14400s"
+      ],
+      "status": "running",
+      "supervisor_identity": {
+        "affinity": [
+          2
+        ],
+        "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+        "command": [
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py",
+          "supervise",
+          "--campaign",
+          "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/campaign.json"
+        ],
+        "hostname": "Eccles",
+        "pid": 1465938,
+        "pid_namespace": "pid:[4026531836]",
+        "ppid": 1,
+        "proc_start_ticks": "533855382",
+        "proc_stat": "1465938 (python3) R 1 1465938 1465938 0 -1 4194304 4124 0 0 0 9 0 0 0 20 0 1 0 533855382 114110464 7552 18446744073709551615 94223876931584 94223879753133 140728531737040 0 0 0 0 16781312 2 0 0 0 17 2 0 0 0 0 0 94223882115088 94223882399032 94223890120704 140728531738248 140728531738516 140728531738516 140728531742695 0\n",
+        "sid": 1465938,
+        "utc": "2026-09-21T16:24:32.680607+00:00"
+      },
+      "verified_at_utc": "2026-09-21T16:36:28.327186+00:00",
+      "watcher_identity": {
+        "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+        "pid": 1466538,
+        "proc_start_ticks": "533919175",
+        "thread": "01a0c42b-fbd4-7e41-a358-c8c36ac18b61",
+        "watcher_sha256": "b6485c99cccfe35a3f5652b775fc47585ee36d0c46ef95e0d044214baef1801f"
+      }
+    },
+    "realtime_optimizer": {
+      "baseline_snapshot": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/cascade_20260921T145424Z/source",
+      "baseline_tests": "118 tests passed in497.367s; current scientific source hashes match exactly",
+      "cleanup_prerequisite": "Completed cascade_cleaner/cascade_tests; no further deletion requested or necessary",
+      "completed_at_utc": "2026-09-21T16:01:29.729590+00:00",
+      "concurrent_pipeline_target": "Pending durable four-worker pilot",
+      "evidence": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/realtime_optimization_20260921",
+      "final_verification": "docs/agent_reports/evidence/realtime_optimization_20260921/final_verification.json",
+      "full_suite": {
+        "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -q",
+        "exit_code": 0,
+        "log": "docs/agent_reports/evidence/realtime_optimization_20260921/full_suite.log",
+        "seconds": 63.227,
+        "tests": 125
+      },
+      "long_horizon_biological_s": 14400,
+      "long_scope": "Four primary modes (additive, binary, abbott_cascade, mauk_cascade), seeds0/1:8runs of14400biologicalseconds",
+      "next_stage": "realtime_validation",
+      "report": "docs/agent_reports/realtime_performance_report.md",
+      "short_single_worker_target_met": true,
+      "source_ownership_released": true,
+      "source_tree_sha256": "961f5fc8ed633c0bcbb0770e5280cd4c4d93172a531cf411678514b1795d4a5d",
+      "started_at_utc": "2026-09-21T15:43:15.985867+00:00",
+      "status": "complete",
+      "target_biological_seconds_per_wall_second": 1.0
+    },
+    "realtime_runner": {
+      "campaign_manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/campaign.json",
+      "completed_at_utc": "2026-09-21T16:22:40.289206+00:00",
+      "launch_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py launch --campaign /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/campaign.json",
+      "pilot_evidence": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/realtime_runner_20260921/pilot_gate.json",
+      "prepared_campaign": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/realtime_runner_20260921/prepared_campaign.json",
+      "production_pilot_prepared": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/realtime_runner_20260921/prepared_campaign_production600s.json",
+      "progress_path": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/control/progress.json",
+      "report": "docs/agent_reports/realtime_experiment_report.md",
+      "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py launch --campaign /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/campaign.json --resume",
+      "runs": [
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/additive_seed0_14400s",
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/additive_seed0_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/additive_seed0_14400s",
+          "condition": "additive",
+          "cpu": 2,
+          "expected_final_step": 14400000,
+          "id": "additive_seed0_14400s",
+          "launch_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/additive_seed0_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/additive_seed0_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/additive_seed0_14400s",
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/additive_seed0_14400s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/additive_seed0_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/additive_seed0_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/additive_seed0_14400s --resume",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/additive_seed0_14400s.json"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/binary_seed0_14400s",
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/binary_seed0_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/binary_seed0_14400s",
+          "condition": "binary",
+          "cpu": 6,
+          "expected_final_step": 14400000,
+          "id": "binary_seed0_14400s",
+          "launch_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/binary_seed0_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/binary_seed0_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/binary_seed0_14400s",
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/binary_seed0_14400s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/binary_seed0_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/binary_seed0_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/binary_seed0_14400s --resume",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/binary_seed0_14400s.json"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/abbott_cascade_seed0_14400s",
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/abbott_cascade_seed0_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/abbott_cascade_seed0_14400s",
+          "condition": "abbott_cascade",
+          "cpu": 10,
+          "expected_final_step": 14400000,
+          "id": "abbott_cascade_seed0_14400s",
+          "launch_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/abbott_cascade_seed0_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/abbott_cascade_seed0_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/abbott_cascade_seed0_14400s",
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/abbott_cascade_seed0_14400s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/abbott_cascade_seed0_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/abbott_cascade_seed0_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/abbott_cascade_seed0_14400s --resume",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/abbott_cascade_seed0_14400s.json"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/mauk_cascade_seed0_14400s",
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/mauk_cascade_seed0_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/mauk_cascade_seed0_14400s",
+          "condition": "mauk_cascade",
+          "cpu": 14,
+          "expected_final_step": 14400000,
+          "id": "mauk_cascade_seed0_14400s",
+          "launch_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/mauk_cascade_seed0_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/mauk_cascade_seed0_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/mauk_cascade_seed0_14400s",
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/mauk_cascade_seed0_14400s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/mauk_cascade_seed0_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/mauk_cascade_seed0_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/mauk_cascade_seed0_14400s --resume",
+          "seed": 0,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/mauk_cascade_seed0_14400s.json"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/additive_seed1_14400s",
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/additive_seed1_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/additive_seed1_14400s",
+          "condition": "additive",
+          "cpu": 2,
+          "expected_final_step": 14400000,
+          "id": "additive_seed1_14400s",
+          "launch_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/additive_seed1_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/additive_seed1_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/additive_seed1_14400s",
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/additive_seed1_14400s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/additive_seed1_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/additive_seed1_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/additive_seed1_14400s --resume",
+          "seed": 1,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/additive_seed1_14400s.json"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/binary_seed1_14400s",
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/binary_seed1_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/binary_seed1_14400s",
+          "condition": "binary",
+          "cpu": 6,
+          "expected_final_step": 14400000,
+          "id": "binary_seed1_14400s",
+          "launch_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/binary_seed1_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/binary_seed1_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/binary_seed1_14400s",
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/binary_seed1_14400s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/binary_seed1_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/binary_seed1_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/binary_seed1_14400s --resume",
+          "seed": 1,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/binary_seed1_14400s.json"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/abbott_cascade_seed1_14400s",
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/abbott_cascade_seed1_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/abbott_cascade_seed1_14400s",
+          "condition": "abbott_cascade",
+          "cpu": 10,
+          "expected_final_step": 14400000,
+          "id": "abbott_cascade_seed1_14400s",
+          "launch_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/abbott_cascade_seed1_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/abbott_cascade_seed1_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/abbott_cascade_seed1_14400s",
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/abbott_cascade_seed1_14400s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/abbott_cascade_seed1_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/abbott_cascade_seed1_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/abbott_cascade_seed1_14400s --resume",
+          "seed": 1,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/abbott_cascade_seed1_14400s.json"
+        },
+        {
+          "analysis": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/mauk_cascade_seed1_14400s",
+          "analysis_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py analyze --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/mauk_cascade_seed1_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/mauk_cascade_seed1_14400s",
+          "condition": "mauk_cascade",
+          "cpu": 14,
+          "expected_final_step": 14400000,
+          "id": "mauk_cascade_seed1_14400s",
+          "launch_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/mauk_cascade_seed1_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/mauk_cascade_seed1_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/mauk_cascade_seed1_14400s",
+          "out": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/mauk_cascade_seed1_14400s",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source && /usr/bin/python3 /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/source/experiments/run_background_campaign.py run --spec /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/mauk_cascade_seed1_14400s.json --out /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/runs/mauk_cascade_seed1_14400s --analysis /home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/analysis/mauk_cascade_seed1_14400s --resume",
+          "seed": 1,
+          "spec": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/specs/mauk_cascade_seed1_14400s.json"
+        }
+      ],
+      "source_hashes": {
+        "config.py": "fc3af3d9a97d777938bd79043372db591123bf76b37e923d6dd82959a35d8e8d",
+        "experiments/pipeline/__init__.py": "44ab539153ad6798c9f4fb6bbec5bc3ac340b0f47a5353a1e21a323bc44769b5",
+        "experiments/pipeline/analyze.py": "a86028aff42f3370583bc01c7e4d7adc8033c2fff1bd3ea6baf3bfd6d211a0af",
+        "experiments/pipeline/common.py": "449d1dbf801b92329f14594e569bd214027f3b9fada4e276c97a2abcacef15c7",
+        "experiments/pipeline/record.py": "173cbd0c9008ee30dc03f8d1116eb3f4fcfdc5bbaa51b81d0cc11ea03a5b1773",
+        "experiments/pipeline/runner.py": "7f9122acbfdf5bac7fc6acb91f2e30573c0573961d1bc7e67831caade35d7507",
+        "experiments/pipeline/supervisor.py": "4ffd66ace5800cc1794055c46f17fcf65b629f36654073ce835a58aa0f67d50e",
+        "experiments/pipeline/validate.py": "20d5433a1f3d738c52a2a4831723d253fab70791f6b8e7b12c2f265953d09ce8",
+        "experiments/run_background_campaign.py": "6e7e526384acdbd924f64ca30fd6be67790ee479c0e8449a514094c88b7ae496",
+        "sim/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sim/_io_native.c": "7f749bbf754755d20db2e18dce8ed9287a027348f09a2ab069c4a09b1c084dbd",
+        "sim/_io_native.cpython-310-x86_64-linux-gnu.so": "967c6f0f119f0987ab86f54def1b72d16806d4bb0e66b670c2704dd44929f779",
+        "sim/analysis.py": "adbc7eca4d6ec17f94256470e238e9cbd0a1ca318c53d1ade9a192b0d948b6e6",
+        "sim/build_native.py": "af5bb2c3b1822ca30deea880ae7bd68bfc9e23db69c32d210e2b0bb855d31629",
+        "sim/connectivity.py": "7fbae44d8fa85725c0a6fb48500f4c0348b8cc330dfbc70ff6ae9616d1308ff8",
+        "sim/homeostasis.py": "7912f31ae18711088241b9a26b2e153274d4854f5f2f1aaae8f8baaf85655b76",
+        "sim/io_channels.py": "01fa173fb2c784ca29faaaf4d22a783064de2e8405de276e1903c28b2a273324",
+        "sim/io_coupling.py": "563e828253a70ad260b1312251686bacceb48c6b152c88a7d450b14d50161e10",
+        "sim/long_run.py": "edcb4595cc5921ab0f86aa079241c3ef36779c3ce0b5a26b7846c7faed7ba75f",
+        "sim/native.py": "67711838fe3e46619687e6e7ad18801fd9c49cf9b21b3e70f4178b2321afb62f",
+        "sim/native_build.json": "760c69da19193ebfee1151b5a19fddab5d79aba0f268e185397bda5729370523",
+        "sim/network_graph.py": "f97c95a48b05f34b17cf14e388678229507a19fbb0c39c2bdd09b12bd8023ce5",
+        "sim/network_viz.py": "0a0b825f851049ca8a4c00ef5ea5ac8b6eeee46c1e60174574dd74c23556eb52",
+        "sim/neurons.py": "8fb60950649480875e9937f1f6ce2cd1e8e697a2f8828bff66c8c93184ede52e",
+        "sim/plasticity.py": "01914ca3228842f7ccdced1b5dccd736627e0f1136c1b357fcc29a0bc30c17ec",
+        "sim/poisson_input.py": "a2df425d212a9d11e1146d0ace1f29943767530cc0db50cec6c8257cd287a96d",
+        "sim/recording.py": "ccc7a3ab2cc04a376faf519335d3405cfc55b18aa333f487cb820b2ee8f85608",
+        "sim/simulate.py": "2a8ab7a4641ff61606a17af2c364c1d041aae2b96467ea361e88ed6c0ae38765"
+      },
+      "source_ownership_released": true,
+      "status": "ready_for_coordinator_launch_review",
+      "storage_evidence": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/realtime_runner_20260921/storage_gate.json"
+    },
+    "realtime_successful_completion": {
+      "campaign_completion": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/realtime_20260921T160422Z/control/CAMPAIGN_COMPLETE.json",
+      "completion_handoff": "docs/agent_reports/evidence/realtime_optimization_20260921/completion_handoff.md",
+      "required_final_step": 14400000,
+      "status": "pending_all_eight_runs"
+    },
+    "realtime_validation": {
+      "atol": 0,
+      "completed_at_utc": "2026-09-21T16:01:54.637745+00:00",
+      "evidence": "docs/agent_reports/evidence/realtime_optimization_20260921/coordinator_validation.json",
+      "independent_scientific_cases": 8,
+      "recovery_cases": 10,
+      "report": "docs/agent_reports/realtime_performance_report.md",
+      "rtol": 0,
+      "status": "complete",
+      "tests": 125
+    },
+    "successful_completion": {
+      "acceptance": "Fresh frozen-source validation passed and reproduced COMPLETE exactly except validation timestamp; analysis, source and configuration checksums pass; supervisor and milestone watcher completed successfully.",
+      "completed_at_utc": "2026-09-21T13:36:41.451268+00:00",
+      "evidence": [
+        "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/runs/homeostatic_scaling_seed0_14400s/COMPLETE",
+        "docs/agent_reports/evidence/homeostasis_20260921T033702Z/restart_reconciliation_20260921.json"
+      ],
+      "original_eight_audit": "docs/agent_reports/evidence/coordinator_resume_20260918/original_campaign_completion_audit.json",
+      "report": "docs/agent_reports/experiment_report.md",
+      "resume_command": "codex -C /home/sk57289/io_equilibrium_sim 'Verify successful completion for all run IDs recorded in docs/agent_reports/progress.json against WORKFLOW.md; inspect exit status, manifests and basic analysis results. Do not launch or duplicate simulations.'",
+      "status": "complete"
+    },
+    "tests": {
+      "acceptance": "Coordinator reviewed exact three-line diff, passing 97-test before/after suites, and current source hashes matching tested tree.",
+      "completed_at_utc": "2026-09-18T07:57:00.286344+00:00",
+      "evidence": [
+        "docs/agent_reports/evidence/cleaner_coordinator_review.json",
+        "docs/agent_reports/evidence/cleaner_checks/baseline.json",
+        "docs/agent_reports/evidence/cleaner_checks/post_cleanup.json"
+      ],
+      "report": "docs/agent_reports/cleanup_report.md",
+      "resume_command": "cd /home/sk57289/io_equilibrium_sim && python3 -m unittest discover -s tests -q",
+      "status": "complete"
+    },
+    "validation": {
+      "acceptance": "Coordinator reviewed optimization-only diff, 97-test pass, 12 bitwise state comparisons, eight full trajectories/events, 36 edge cases, saved recording audit, controlled timings and current source hashes.",
+      "completed_at_utc": "2026-09-18T08:25:12.731220+00:00",
+      "evidence": [
+        "docs/agent_reports/evidence/optimizer_coordinator_review.json",
+        "docs/agent_reports/evidence/optimizer_checks/final_verification.json"
+      ],
+      "report": "docs/agent_reports/performance_report.md",
+      "resume_command": "codex -C /home/sk57289/io_equilibrium_sim 'Perform only the coordinator validation gate in WORKFLOW.md using the existing performance_report.md comparisons and current tree; record exact commands and results in progress.json. Do not launch experiments.'",
+      "source_tree_sha256": "8e4102bd88e40dd077d0bbf56a3662cff898250a978f93f534d88738c3d2a993",
+      "status": "complete"
+    }
+  },
+  "updated_at_utc": "2026-09-21T16:36:28.338281+00:00",
+  "workflow_history": [
+    {
+      "active_stage": "complete",
+      "archived_at_utc": "2026-09-21T14:16:29.383973+00:00",
+      "completed_stages": [
+        "setup",
+        "cleaner",
+        "tests",
+        "optimizer",
+        "validation",
+        "experiment_runner",
+        "successful_completion",
+        "analyst"
+      ],
+      "reason": "User authorized both cascade implementations/comparison after folder cleanup",
+      "source_edit_owner": null,
+      "stages": {
+        "analyst": {
+          "campaign_id": "homeostasis_20260921T034911Z",
+          "completed_at_utc": "2026-09-21T13:41:30.877150+00:00",
+          "evidence": [
+            "docs/agent_reports/evidence/homeostasis_20260921T033702Z/restart_reconciliation_20260921.json",
+            "docs/agent_reports/evidence/homeostasis_drift_20260921/diagnosis.json",
+            "docs/agent_reports/evidence/homeostasis_drift_20260921/diagnose.py",
+            "docs/agent_reports/evidence/homeostasis_drift_20260921/drift_attribution.png"
+          ],
+          "prior_record": {
+            "completed_at_utc": null,
+            "evidence": [],
+            "note": "Interim final_report.md is coordinator status only; analyst synthesis follows successful completion.",
+            "report": "docs/agent_reports/final_report.md",
+            "resume_command": "codex -C /home/sk57289/io_equilibrium_sim 'Use the analyst custom agent after verifying successful completion in WORKFLOW.md and progress.json. Read all three agent reports and HANDOFF_drift_diagnosis.rtf; write final_report.md without changing simulation source or raw data.'",
+            "status": "deferred_until_nine_runs_complete"
+          },
+          "report": "docs/agent_reports/homeostasis_drift_report.md",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim && /usr/bin/python3 docs/agent_reports/evidence/homeostasis_drift_20260921/diagnose.py",
+          "run_ids": [
+            "homeostatic_scaling_seed0_14400s",
+            "homeostatic_scaling_pilot30s"
+          ],
+          "scope": "User-selected completed homeostasis run and pilot drift diagnosis; historical final_report.md preserved",
+          "simulation_resume_disposition": "Not applicable: user selected completed result; no duplicate or restart.",
+          "status": "complete"
+        },
+        "cascade_cleaner": {
+          "evidence": "docs/agent_reports/evidence/cascade_cleanup_20260921",
+          "report": "docs/agent_reports/cascade_cleanup_report.md",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim && python3 -m unittest discover -s tests -q",
+          "source_tree_sha256": "b8fb0d8aa4815dfe5cc7d28f58a85fd31749cfea97aa7397620e070641d0ac38",
+          "started_at_utc": "2026-09-21T14:16:29.383973+00:00",
+          "status": "baseline_running"
+        },
+        "cleaner": {
+          "baseline_exit_code": 0,
+          "baseline_log": "docs/agent_reports/evidence/cleaner_checks/baseline.log",
+          "baseline_process": {
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "started_at_utc": "2026-09-18T07:37:53.375115+00:00",
+            "test_pid": 835078,
+            "test_proc_stat": "835078 (python3) R 835073 835073 835073 0 -1 4194304 44 0 0 0 0 0 0 0 20 0 1 0 504775464 6602752 0 18446744073709551615 94339821694976 94339824516525 140721435423536 0 0 0 0 0 0 0 0 0 17 57 0 0 0 0 0 94339826878480 94339827162424 94339843899392 140721435430652 140721435430693 140721435430693 140721435434983 0",
+            "wrapper_pid": 835073
+          },
+          "baseline_snapshot": "docs/agent_reports/evidence/workflow_start_20260918T073421Z",
+          "baseline_status": "passed",
+          "baseline_wall_s": 488.66947751957923,
+          "changed_files": [
+            "config.py",
+            "experiments/drift_figures.py",
+            "experiments/run_gap_weight_sweep.py"
+          ],
+          "completed_at_utc": "2026-09-18T07:56:39.083169+00:00",
+          "evidence": [
+            "docs/agent_reports/evidence/cleaner_static_review.json",
+            "docs/agent_reports/evidence/cleaner_checks/baseline.json",
+            "docs/agent_reports/evidence/cleaner_checks/post_cleanup.json",
+            "docs/agent_reports/evidence/cleaner_checks/cleanup.patch",
+            "docs/agent_reports/evidence/cleaner_checks/cleanup_ast_equivalence.json",
+            "docs/agent_reports/evidence/cleaner_checks/cli_smoke_checks.json",
+            "docs/agent_reports/evidence/cleaner_checks/final_verification.json"
+          ],
+          "next_gate": "tests",
+          "post_cleanup_exit_code": 0,
+          "post_cleanup_process": {
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "started_at_utc": "2026-09-18T07:47:06.748415+00:00",
+            "test_pid": 837919,
+            "test_proc_stat": "837919 (python3) R 837913 837913 837913 0 -1 4194304 39 0 0 0 0 0 0 0 20 0 1 0 504830801 6602752 0 18446744073709551615 94917927956480 94917930778029 140729273059264 0 0 0 0 0 0 0 0 0 17 16 0 0 0 0 0 94917933139984 94917933423928 94917958017024 140729273061116 140729273061157 140729273061157 140729273065447 0",
+            "wrapper_pid": 837913
+          },
+          "post_cleanup_status": "passed",
+          "post_cleanup_wall_s": 495.21660038270056,
+          "report": "docs/agent_reports/cleanup_report.md",
+          "resume_command": "codex -C /home/sk57289/io_equilibrium_sim 'Use the cleaner custom agent for the cleaner stage only. Read AGENTS.md, WORKFLOW.md, progress.json and HANDOFF_drift_diagnosis.rtf. Run baseline and post-change tests. Do not start optimizer or experiments.'",
+          "source_edits_performed": true,
+          "source_hash_manifest": "docs/agent_reports/evidence/cleaner_checks/final_verification.json",
+          "source_tree_sha256": "9b5780224cd6da97ce773c88f498f15b02e6c34a97db23210858388d3b527472",
+          "started_at_utc": "2026-09-18T07:34:21.901700+00:00",
+          "status": "complete"
+        },
+        "experiment_runner": {
+          "campaign_manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/campaign.json",
+          "campaign_resume_command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 experiments/run_background_campaign.py launch --campaign /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/campaign.json --resume",
+          "campaign_status": "complete",
+          "completed_at_utc": "2026-09-21T13:36:02.605432+00:00",
+          "evidence": [
+            "docs/agent_reports/evidence/runner_checks/",
+            "docs/agent_reports/evidence/coordinator_resume_20260918/audit.json",
+            "docs/agent_reports/evidence/coordinator_resume_20260918/recovery_gate_review.json",
+            "docs/agent_reports/evidence/runner_checks/safeguards.json",
+            "docs/agent_reports/evidence/coordinator_resume_20260918/long_launch_gate_review.json",
+            "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/runner_checks/combined_20260920T015726Z/pilot_gate.json",
+            "docs/agent_reports/evidence/coordinator_resume_20260918/combined_launch_gate_review.json"
+          ],
+          "extension_checkpoint_pointer": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/runs/heterogeneity_015_pf_strength_double_seed0_18000s/CURRENT.json",
+          "extension_control_root": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/control",
+          "extension_evidence": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/runner_checks/combined_20260920T015726Z",
+          "extension_launch_evidence": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/runner_checks/combined_20260920T015726Z/long_launch_verified.json",
+          "extension_launch_review": "docs/agent_reports/evidence/coordinator_resume_20260918/combined_launch_gate_review.json",
+          "extension_manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/combined_campaign.json",
+          "extension_pilot_gate": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/runner_checks/combined_20260920T015726Z/pilot_gate.json",
+          "extension_pilot_identity": {
+            "affinity": [
+              4
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+              "supervise",
+              "--campaign",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/pilot_campaign.json"
+            ],
+            "hostname": "Eccles",
+            "pid": 1353262,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 1,
+            "proc_start_ticks": "520013268",
+            "proc_stat": "1353262 (python3) R 1 1353262 1353262 0 -1 4194304 4113 0 0 0 8 2 0 0 20 0 1 0 520013268 114106368 7424 18446744073709551615 94267029069824 94267031891373 140724199944832 0 0 0 0 16781312 2 0 0 0 17 4 0 0 0 0 0 94267034253328 94267034537272 94267058311168 140724199951961 140724199952276 140724199952276 140724199956455 0\n",
+            "sid": 1353262,
+            "utc": "2026-09-20T01:57:31.535611+00:00"
+          },
+          "extension_pilot_progress": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/runner_checks/combined_20260920T015726Z/pilot_progress.json",
+          "extension_projected_wall_s": 43606.173123791814,
+          "extension_started_at_utc": "2026-09-20T02:00:18.387748+00:00",
+          "extension_status": "long_run_active",
+          "extension_supervisor_identity": {
+            "affinity": [
+              4
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+              "supervise",
+              "--campaign",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/combined_campaign.json"
+            ],
+            "hostname": "Eccles",
+            "pid": 1354293,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 1,
+            "proc_start_ticks": "520029953",
+            "proc_stat": "1354293 (python3) R 1 1354293 1354293 0 -1 4194304 4118 0 0 0 8 2 0 0 20 0 1 0 520029953 114110464 7424 18446744073709551615 94056641519616 94056644341165 140724168497456 0 0 0 0 16781312 2 0 0 0 17 4 0 0 0 0 0 94056646703120 94056646987064 94056655380480 140724168502870 140724168503188 140724168503188 140724168507367 0\n",
+            "sid": 1354293,
+            "utc": "2026-09-20T02:00:18.387600+00:00"
+          },
+          "extension_worker_identity": {
+            "affinity": [
+              4
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/specs/heterogeneity_015_pf_strength_double_seed0_18000s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/runs/heterogeneity_015_pf_strength_double_seed0_18000s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/extensions/combined_20260920T015726Z/analysis/heterogeneity_015_pf_strength_double_seed0_18000s"
+            ],
+            "hostname": "Eccles",
+            "pid": 1354582,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 1354293,
+            "proc_start_ticks": "520033730",
+            "proc_stat": "1354582 (python3) R 1354293 1354293 1354293 0 -1 4194304 4437 108 0 0 6 2 0 0 20 0 1 0 520033730 115654656 7680 18446744073709551615 94335677071360 94335679892909 140735731877216 0 0 0 0 16781313 16386 0 0 0 17 4 0 0 0 0 0 94335682254864 94335682538808 94335710879744 140735731883199 140735731883924 140735731883924 140735731888103 0\n",
+            "sid": 1354293,
+            "utc": "2026-09-20T02:00:56.151226+00:00"
+          },
+          "failed_attempts": [
+            {
+              "evidence": "docs/agent_reports/evidence/runner_checks/failed_attempt_1_recovery_harness.log",
+              "gate": "recovery_harness",
+              "reason": "Exact comparator did not support immutable NumPy scalar-type objects in recorder schema; TypeError vars(), after scientific state and record arrays compared exactly. Correct comparator to check type objects by identity; no tolerance changes.",
+              "status": "resolved_exact_recovery_passed"
+            }
+          ],
+          "long_launch_gate": "accepted",
+          "long_launch_review": "docs/agent_reports/evidence/coordinator_resume_20260918/long_launch_gate_review.json",
+          "long_started_at_utc": "2026-09-18T16:41:13.034062+00:00",
+          "note": "Original eight validated/analysis complete; combined ninth active after8s burn. All9 retained in centralprogress. Automatic longvalidation/basic analysis and every300bio-second checkpoints active.",
+          "original_eight_completion_audit": "docs/agent_reports/evidence/coordinator_resume_20260918/original_campaign_completion_audit.json",
+          "pending_launch": {
+            "campaign_manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/pilot_campaign.json",
+            "command": "cd /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source && /usr/bin/python3 experiments/run_background_campaign.py launch --campaign /home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/pilot_campaign.json",
+            "completed_at_utc": "2026-09-18T16:39:06.546666+00:00",
+            "duplicate_prevention": "One existing tool approval request may execute; reconcile it and pilot_control/supervisor_status.json before launching.",
+            "kind": "four_condition_30s_pilot",
+            "process_identity": {
+              "affinity": [
+                4
+              ],
+              "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+              "command": [
+                "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/source/experiments/run_background_campaign.py",
+                "supervise",
+                "--campaign",
+                "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/background_20260918T160421Z/pilot_campaign.json"
+              ],
+              "hostname": "Eccles",
+              "pid": 988427,
+              "pid_namespace": "pid:[4026531836]",
+              "ppid": 1,
+              "proc_start_ticks": "508010744",
+              "proc_stat": "988427 (python3) R 1 988427 988427 0 -1 4194304 4116 0 0 0 7 1 0 0 20 0 1 0 508010744 114110464 7424 18446744073709551615 94318623997952 94318626819501 140735105588048 0 0 0 0 16781312 2 0 0 0 17 4 0 0 0 0 0 94318629181456 94318629465400 94318638055424 140735105592958 140735105593236 140735105593236 140735105597415 0\n",
+              "sid": 988427,
+              "utc": "2026-09-18T16:37:06.296953+00:00"
+            },
+            "status": "pilot_completed_long_launched"
+          },
+          "pilot_evidence": "docs/agent_reports/evidence/runner_checks/pilot_gate.json",
+          "pilot_progress_path": "docs/agent_reports/evidence/runner_checks/pilot_progress.json",
+          "pilot_status": "passed",
+          "prepared_campaign": "results/workflow_campaign/background_20260918T160421Z/campaign.json",
+          "recovery_evidence": "docs/agent_reports/evidence/runner_checks/recovery_latest.json",
+          "recovery_status": "passed",
+          "report": "docs/agent_reports/experiment_report.md",
+          "report_status": "homeostatic_replacement_complete",
+          "restart_reconciliation": "docs/agent_reports/evidence/homeostasis_20260921T033702Z/restart_reconciliation_20260921.json",
+          "resume_command": "codex -C /home/sk57289/io_equilibrium_sim 'Resume experiment_runner; latest user explicitly authorizes implementation and validation then five biological hours of background activity per condition; inspect progress and live identities before any launch.'",
+          "started_at_utc": "2026-09-18T15:52:11.028557+00:00",
+          "status": "complete",
+          "supervisor_identity": {
+            "affinity": [
+              4
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/source/experiments/run_background_campaign.py",
+              "supervise",
+              "--campaign",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/campaign.json"
+            ],
+            "hostname": "Eccles",
+            "pid": 1399211,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 1,
+            "proc_start_ticks": "529549392",
+            "proc_stat": "1399211 (python3) R 1 1399211 1399211 0 -1 4194304 4114 0 0 0 8 1 0 0 20 0 1 0 529549392 114114560 7424 18446744073709551615 94671690653696 94671693475245 140730828822352 0 0 0 0 16781312 2 0 0 0 17 4 0 0 0 0 0 94671695837200 94671696121144 94671705513984 140730828828290 140730828828564 140730828828564 140730828832743 0\n",
+            "sid": 1399211,
+            "utc": "2026-09-21T04:26:52.782048+00:00"
+          }
+        },
+        "homeostasis": {
+          "completed_at_utc": "2026-09-21T13:35:47.903046+00:00",
+          "completion_audit": "docs/agent_reports/evidence/homeostasis_20260921T033702Z/restart_reconciliation_20260921.json",
+          "condition": {
+            "homeostatic_rate_tau_s": 60.0,
+            "homeostatic_scaling": true,
+            "homeostatic_target_hz": 60.0,
+            "homeostatic_tau_s": 14400.0,
+            "homeostatic_update_s": 1.0,
+            "io_heterogeneity_cv": 0.0,
+            "pf_pkj_gain": 0.000137
+          },
+          "duration_s": 14400,
+          "evidence": "docs/agent_reports/evidence/homeostasis_20260921T033702Z",
+          "launch_verified": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/homeostasis_20260921T033702Z/launch_verified.json",
+          "manifest": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/campaign.json",
+          "notification_status": "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/progress_notifications/status.json",
+          "pilot_gate": "/home/sk57289/io_equilibrium_sim/docs/agent_reports/evidence/homeostasis_20260921T033702Z/pilot_gate.json",
+          "progress_milestone_percent": 10,
+          "report": "docs/agent_reports/homeostasis_report.md",
+          "restart_disposition": "Original run was live at inspection and reached verified completion during inspection; no restart or duplicate launched.",
+          "seed": 0,
+          "source_hashes": {
+            "config.py": "d6cc341b48abc0f974ecb706f4f62b067a46a599a1d1af4297a449ae00454524",
+            "experiments/pipeline/__init__.py": "44ab539153ad6798c9f4fb6bbec5bc3ac340b0f47a5353a1e21a323bc44769b5",
+            "experiments/pipeline/analyze.py": "2b2733b93b09b236fdd5c25f2855fb4746b31a387ec9e6f268511949032517e6",
+            "experiments/pipeline/common.py": "2a762ccdc3740f8c03ec9eb13d9a526c33ea4346f2c5a39628df683dbd75ef9c",
+            "experiments/pipeline/record.py": "59c6a453129c74507d8357d60247713100303740f204d033124a053bb9f5f2ea",
+            "experiments/pipeline/runner.py": "89c568ca3ab3d98ff76f0fd42616af16e55e85d7bd47150e97dcafb9274721c2",
+            "experiments/pipeline/supervisor.py": "ebfa73485c9a0f08f526b01085db4737ddc6601120bc85fa36162b6a2be9c0d3",
+            "experiments/pipeline/validate.py": "c2431b4ec19cc2f1f77adffa925eab3e6ac4ec5c641399e44bba456460ed7ca4",
+            "experiments/run_background_campaign.py": "6e7e526384acdbd924f64ca30fd6be67790ee479c0e8449a514094c88b7ae496",
+            "sim/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "sim/analysis.py": "adbc7eca4d6ec17f94256470e238e9cbd0a1ca318c53d1ade9a192b0d948b6e6",
+            "sim/connectivity.py": "7fbae44d8fa85725c0a6fb48500f4c0348b8cc330dfbc70ff6ae9616d1308ff8",
+            "sim/homeostasis.py": "7912f31ae18711088241b9a26b2e153274d4854f5f2f1aaae8f8baaf85655b76",
+            "sim/io_channels.py": "3d2b417063b504cf11458d84b401143f13c586bf0dfbaab6308ae890340b9f1c",
+            "sim/io_coupling.py": "563e828253a70ad260b1312251686bacceb48c6b152c88a7d450b14d50161e10",
+            "sim/long_run.py": "edcb4595cc5921ab0f86aa079241c3ef36779c3ce0b5a26b7846c7faed7ba75f",
+            "sim/network_graph.py": "f97c95a48b05f34b17cf14e388678229507a19fbb0c39c2bdd09b12bd8023ce5",
+            "sim/network_viz.py": "0a0b825f851049ca8a4c00ef5ea5ac8b6eeee46c1e60174574dd74c23556eb52",
+            "sim/neurons.py": "8fb60950649480875e9937f1f6ce2cd1e8e697a2f8828bff66c8c93184ede52e",
+            "sim/plasticity.py": "b746e2b45cf573765adb315087c7f4e5aa5f2c0c04e30482abd541c78678e7a0",
+            "sim/poisson_input.py": "8be5f0f950072ed9a9d6e4b131d6c3aacdfbd587873f78bdaa50e7eb5a2f5582",
+            "sim/recording.py": "ccc7a3ab2cc04a376faf519335d3405cfc55b18aa333f487cb820b2ee8f85608",
+            "sim/simulate.py": "87a42a750d609726cd7c7bc7fcc55213a9a8b399427b6e08ddce1fff6e80732a"
+          },
+          "status": "complete",
+          "watcher_identity": {
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "pid": 1399351,
+            "proc_start_ticks": "529551651",
+            "thread": "01a0c1f8-8386-72d3-954f-d7ae6f28e8ea"
+          },
+          "worker_identity": {
+            "affinity": [
+              4
+            ],
+            "boot_id": "6a6fe94e-9e94-4ee2-a492-cea2b630b342",
+            "command": [
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/source/experiments/run_background_campaign.py",
+              "run",
+              "--spec",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/specs/homeostatic_scaling_seed0_14400s.json",
+              "--out",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/runs/homeostatic_scaling_seed0_14400s",
+              "--analysis",
+              "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/analysis/homeostatic_scaling_seed0_14400s"
+            ],
+            "hostname": "Eccles",
+            "pid": 1399212,
+            "pid_namespace": "pid:[4026531836]",
+            "ppid": 1399211,
+            "proc_start_ticks": "529549403",
+            "proc_stat": "1399212 (python3) R 1399211 1399211 1399211 0 -1 4194304 4470 108 0 0 7 1 0 0 20 0 1 0 529549403 115617792 7680 18446744073709551615 94673995177984 94673997999533 140728981295648 0 0 0 0 16781313 16386 0 0 0 17 4 0 0 0 0 0 94674000361488 94674000645432 94674010292224 140728981298525 140728981299092 140728981299092 140728981303271 0\n",
+            "sid": 1399211,
+            "utc": "2026-09-21T04:26:52.889555+00:00"
+          }
+        },
+        "optimizer": {
+          "baseline_profile": "docs/agent_reports/evidence/optimizer_checks/baseline_profile_valid/profile.txt",
+          "baseline_snapshot": "docs/agent_reports/evidence/optimizer_checks/baseline_source",
+          "baseline_wall_s": [
+            9.93545642029494,
+            9.901664744131267,
+            9.926701795309782
+          ],
+          "candidate": "Sparse fired-coordinate lookup via flatnonzero/divmod; original arithmetic and full clipping retained",
+          "candidate_wall_s": [
+            9.092337674461305,
+            9.105931588448584,
+            9.07614500168711
+          ],
+          "changed_files": [
+            "sim/plasticity.py"
+          ],
+          "completed_at_utc": "2026-09-18T08:24:06.199852+00:00",
+          "evidence": [
+            "docs/agent_reports/evidence/optimizer_checks/baseline_manifest.json",
+            "docs/agent_reports/evidence/optimizer_checks/candidate_manifest.json",
+            "docs/agent_reports/evidence/optimizer_checks/optimization.patch",
+            "docs/agent_reports/evidence/optimizer_checks/batch_status.json",
+            "docs/agent_reports/evidence/optimizer_checks/paired_status.json",
+            "docs/agent_reports/evidence/optimizer_checks/final_verification.json",
+            "docs/agent_reports/evidence/optimizer_checks/plasticity_edges.json",
+            "docs/agent_reports/evidence/optimizer_checks/recording_audit.json",
+            "docs/agent_reports/evidence/optimizer_checks/recorder_replay.json",
+            "docs/agent_reports/evidence/optimizer_checks/full_unittest.log"
+          ],
+          "full_unittest_count": 97,
+          "full_unittest_exit_code": 0,
+          "full_unittest_wall_s": 489.61835290584713,
+          "measured_recorded_speedup": 1.0643876729329662,
+          "next_gate": "validation",
+          "paired_timing_status_file": "docs/agent_reports/evidence/optimizer_checks/paired_status.json",
+          "report": "docs/agent_reports/performance_report.md",
+          "resume_command": "codex -C /home/sk57289/io_equilibrium_sim 'Use the optimizer custom agent for the optimizer stage only after checking cleaner and tests acceptance in WORKFLOW.md and progress.json. Preserve the handoff constraints. Do not launch experiments.'",
+          "source_tree_sha256": "8e4102bd88e40dd077d0bbf56a3662cff898250a978f93f534d88738c3d2a993",
+          "speedup_basis": "Median of 3 CPU4-pinned full-size streaming runs per version; 1s burn+3s activity; exact equivalence; bounded estimate only",
+          "started_at_utc": "2026-09-18T07:57:00.286344+00:00",
+          "status": "complete",
+          "validation_status": "passed_pending_coordinator_acceptance",
+          "validation_status_file": "docs/agent_reports/evidence/optimizer_checks/batch_status.json"
+        },
+        "successful_completion": {
+          "acceptance": "Fresh frozen-source validation passed and reproduced COMPLETE exactly except validation timestamp; analysis, source and configuration checksums pass; supervisor and milestone watcher completed successfully.",
+          "completed_at_utc": "2026-09-21T13:36:41.451268+00:00",
+          "evidence": [
+            "/home/sk57289/io_equilibrium_sim/results/workflow_campaign/homeostasis_20260921T034911Z/runs/homeostatic_scaling_seed0_14400s/COMPLETE",
+            "docs/agent_reports/evidence/homeostasis_20260921T033702Z/restart_reconciliation_20260921.json"
+          ],
+          "original_eight_audit": "docs/agent_reports/evidence/coordinator_resume_20260918/original_campaign_completion_audit.json",
+          "report": "docs/agent_reports/experiment_report.md",
+          "resume_command": "codex -C /home/sk57289/io_equilibrium_sim 'Verify successful completion for all run IDs recorded in docs/agent_reports/progress.json against WORKFLOW.md; inspect exit status, manifests and basic analysis results. Do not launch or duplicate simulations.'",
+          "status": "complete"
+        },
+        "tests": {
+          "acceptance": "Coordinator reviewed exact three-line diff, passing 97-test before/after suites, and current source hashes matching tested tree.",
+          "completed_at_utc": "2026-09-18T07:57:00.286344+00:00",
+          "evidence": [
+            "docs/agent_reports/evidence/cleaner_coordinator_review.json",
+            "docs/agent_reports/evidence/cleaner_checks/baseline.json",
+            "docs/agent_reports/evidence/cleaner_checks/post_cleanup.json"
+          ],
+          "report": "docs/agent_reports/cleanup_report.md",
+          "resume_command": "cd /home/sk57289/io_equilibrium_sim && python3 -m unittest discover -s tests -q",
+          "status": "complete"
+        },
+        "validation": {
+          "acceptance": "Coordinator reviewed optimization-only diff, 97-test pass, 12 bitwise state comparisons, eight full trajectories/events, 36 edge cases, saved recording audit, controlled timings and current source hashes.",
+          "completed_at_utc": "2026-09-18T08:25:12.731220+00:00",
+          "evidence": [
+            "docs/agent_reports/evidence/optimizer_coordinator_review.json",
+            "docs/agent_reports/evidence/optimizer_checks/final_verification.json"
+          ],
+          "report": "docs/agent_reports/performance_report.md",
+          "resume_command": "codex -C /home/sk57289/io_equilibrium_sim 'Perform only the coordinator validation gate in WORKFLOW.md using the existing performance_report.md comparisons and current tree; record exact commands and results in progress.json. Do not launch experiments.'",
+          "source_tree_sha256": "8e4102bd88e40dd077d0bbf56a3662cff898250a978f93f534d88738c3d2a993",
+          "status": "complete"
+        }
+      }
+    }
+  ]
+}

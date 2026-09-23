@@ -61,7 +61,7 @@ def pkj_rate(cfg, gain, weight, secs, n=64, seed=0):
                          cfg.pkj.e_leak_mv, cfg.pkj.t_ref_ms, cfg.pkj_baseline_hz, cfg.tau_pf_pkj_ms,
                          cfg.tau_pkj_dcn_ms, cfg.e_exc_mv, cfg.e_inh_mv,
                          noise_sigma_mv=cfg.pkj.noise_sigma_mv, rng=np.random.default_rng(seed + 1),
-                         pause_g=cfg.cf_pause_g, pause_ms=cfg.cf_pause_ms, e_pause_mv=cfg.e_inh_mv)
+                         pause_g=cfg.cf_pause_g, pause_ms=cfg.cf_pause_ms, e_pause_mv=cfg.cf_pkj_reversal_mv)
     w = np.full((n, cfg.n_pf_per_pkj), weight)
     total = 0
     for _ in range(int(secs * 1000)):

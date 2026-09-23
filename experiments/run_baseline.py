@@ -45,6 +45,11 @@ def main():
     parser.add_argument("--gap-g", type=float, default=None,
                          help="conductance of ONE gap junction, mS/cm^2; 0 uncouples the olive "
                               "(default: config.SimConfig.gap_g, 0.0143)")
+    parser.add_argument("--cf-reversal-mv", type=float, default=None,
+                         help="reversal potential of the CF conductance on PKJ: 0 = excitatory "
+                              "climbing fiber (the shipped default), -75 = the original "
+                              "post-complex-spike pause "
+                              "(default: config.SimConfig.cf_pkj_reversal_mv)")
     parser.add_argument("--seed", type=int, default=0,
                          help="seeds the PF Poisson draws and the membrane noise (default: 0)")
     parser.add_argument("--out-dir", type=str, default="results",
@@ -58,8 +63,12 @@ def main():
                      n_tracked_synapses=args.n_tracked_synapses)
     if args.gap_g is not None:
         cfg.gap_g = args.gap_g
+    if args.cf_reversal_mv is not None:
+        cfg.cf_pkj_reversal_mv = args.cf_reversal_mv
     sim = Simulation(cfg)
     print(f"[baseline] {sim.conn.describe()}")
+    print(f"[baseline] CF -> PKJ reversal {cfg.cf_pkj_reversal_mv:+.1f} mV "
+          f"({'excitatory' if cfg.cf_pkj_reversal_mv > cfg.pkj.v_th_mv else 'inhibitory pause'})")
     log = sim.run()
 
     s = summarize(log)

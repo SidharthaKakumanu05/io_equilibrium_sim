@@ -45,6 +45,7 @@ next to it.
 | `experiments/run_io_characterization.py` | Does the olivary cell behave like one? | yes, single-cell | ~10 min |
 | `experiments/run_calibration.py` | Where do the three synaptic gains come from? | yes, stage by stage | ~10 min |
 | `experiments/run_gap_sweep.py` | What do the gap junctions do to the loop? | yes, one per point | ~10 min |
+| `experiments/run_gap_weight_sweep.py` | Does coupling hold the Purkinje cells' weights together? | yes, 4 in parallel | ~15 min |
 | `experiments/run_window_sweep.py` | Which δ−/δ+ ratio zeroes the drift? (H2, direct) | yes, one per candidate | ~30 min |
 | `experiments/run_three_window.py` | Does a null window slow the random walk? (H3) | yes, one per candidate | ~30 min |
 | `experiments/sweep.py` | **All of the above, replicated across seeds** | yes, 400 of them | ~4 h on 60 cores |
@@ -341,6 +342,295 @@ synaptic decay and the whole feedback limb run on — is checked here:
 about does not move. The weight it settles at drifts mildly (0.366 → 0.421, about
 13%), tracking a 2.7% rise in PKJ rate, so **absolute weights should be read as
 dt-dependent to ~15%, while rates should not.**
+
+### The sign of the climbing fiber
+
+The CF conductance onto PKJ was originally given `e_inh_mv`, which made it a
+model of the post-complex-spike **pause** — the net effect a climbing fiber has
+on a Purkinje cell's simple-spike train — rather than of the synapse, which is
+glutamatergic and excitatory. `cf_pkj_reversal_mv` makes that a knob, and the
+default is now the synapse's own sign. Both conditions, one seed, 350 s, all
+other parameters at their defaults (which were fitted at −75 mV):
+
+| | CF excitatory (0 mV) | CF pause (−75 mV) |
+|---|---|---|
+| PKJ | 60.00 Hz | 56.16 Hz |
+| DCN | 15.07 Hz | 17.20 Hz |
+| IO / CF | 0.994 Hz | 0.997 Hz |
+| IO ISI CV | 0.39 | 0.42 |
+| mean PF→PKJ weight | 0.366 | 0.386 |
+| weight drift | +0.00000 /s | −0.00004 /s |
+| CF synchrony index | **0.230** | **0.075** |
+
+**The equilibrium survives the sign flip.** CF rate lands within 0.6% of 1 Hz
+either way and the weights are flat in both, which is a real result for H1: the
+loop regulates to its setpoint through a change that inverts one of its limbs,
+rather than being tuned to it. What moves is the operating point around that
+setpoint — PKJ up ~4 Hz, DCN down ~2 Hz, weights ~5% lower.
+
+**What actually changes is the sign of the feedback.** Peri-CF histograms:
+
+| | CF excitatory | CF pause |
+|---|---|---|
+| PKJ before → after CF | 57.4 → 197.3 Hz | 57.5 → 2.9 Hz |
+| PKJ extremum | 472 Hz at +4 ms | 0 Hz at +2 ms |
+| DCN before → after CF | 12.5 → 3.0 Hz | 18.4 → 21.6 Hz |
+| DCN extremum | 2.2 Hz at +18 ms | 30.0 Hz at +58 ms |
+
+With the pause, a CF event *removes* Purkinje inhibition, DCN rate rises, and
+the olive gets **more** inhibition: the CF's own effect on the olive is negative
+feedback. Excitatory, a CF event drives a Purkinje burst that silences the
+nucleus (DCN falls to 3 Hz), and the olive is **disinhibited** — positive
+feedback. `run_baseline.py --cf-reversal-mv 0`'s voltage trace shows the
+`DCN→IO g_GABA` panel collapsing from ~0.15 to near zero after each CF event,
+where the pause condition's only ripples.
+
+That positive limb is what **triples the CF synchrony index, 0.075 → 0.230**.
+Every olivary cell's climbing fiber now transiently disinhibits every olivary
+cell downstream of the same nuclear cells, which is a recurrent excitatory path
+the pause model does not have. The traces show it directly: the olive fires in
+tight, near-simultaneous population events, where at −75 mV the same events are
+staggered across ~150 ms.
+
+One thing the excitatory version gets *more* right than either the pause model
+or a naive reading of the synapse: the PKJ peri-CF histogram peaks at 472 Hz at
++4 ms and then falls to **0 Hz at +12 ms**. A burst followed by a pause is what
+a complex spike actually looks like, and here it is emergent — the shunt during
+the conductance, and the refractory aftermath of the burst, produce the pause
+without it being modeled.
+
+Caveat: n=1, and the three synaptic gains were fitted at −75 mV. The gains have
+not been re-fitted for the excitatory default, so the operating-point shifts in
+the first table are partly the loop compensating for a mis-fitted gain, not
+purely the sign change. Re-run `experiments/run_calibration.py` before quoting
+these as calibrated numbers.
+
+### What coupling can and cannot hold together
+
+The individual-synapse panel of `run_baseline.py` shows weights fanning across
+most of [0,1], which looks like the loop failing to hold them. It isn't. The
+weight vector has two independent spreads, and the loop acts on exactly one.
+
+`experiments/run_gap_weight_sweep.py`, 350 s per condition, one seed:
+
+| coupling | `gap_g` | CF sync | **between-cell SD** | within-cell SD | IO Hz | drift |
+|---|---|---|---|---|---|---|
+| off | 0 | 0.053 | **0.0991** | 0.2146 | 0.998 | +0.00001 |
+| weak | 0.005 | 0.135 | **0.0403** | 0.2103 | 0.999 | −0.00003 |
+| moderate | 0.0143 | 0.230 | **0.0102** | 0.2165 | 0.994 | +0.00000 |
+| strong | 0.04 | 0.300 | **0.0106** | 0.2262 | 0.994 | +0.00001 |
+
+**Coupling the olive tightens the per-cell means ~10×** (0.0991 → 0.0102),
+monotonically in CF synchrony. At `gap_g = 0` the 320 cells' mean weights fan
+from 0.2 to 0.7; at the shipped value they are a ribbon a few percent wide.
+
+**It saturates at the shipped value.** Moderate and strong are indistinguishable
+(0.0102 vs 0.0106) even though CF synchrony keeps climbing 0.230 → 0.300. The
+default `gap_g` already sits at the knee, which is a non-obvious argument for it
+beyond the physiological one in [electrical coupling](#electrical-coupling-what-it-does-and-what-sets-it).
+
+**It does nothing to the within-cell spread**, flat at 0.21–0.23 across a
+coupling range that moves the between-cell spread tenfold. At moderate coupling
+the within-cell spread is **20× larger** than the between-cell spread.
+
+The two spreads are different objects, and this is the useful distinction:
+
+  * A cell's *mean* weight has a restoring force — the cell's own climbing fiber
+    is the feedback limb for it — so the between-cell spread is **bounded**. In
+    the log panel every condition flattens rather than growing as √t. Gap
+    junctions then correlate those per-cell equilibria, tightening a spread that
+    was already going to be finite.
+  * The spread *within* a cell has no restoring force at all. All 500 synapses
+    share one CF verdict, so the feedback enters identically for every one of
+    them and cancels out of their differences. That spread is a free random walk,
+    it grows as √t without bound, and no value of `gap_g` touches it. Its measured
+    0.2165 is the free-diffusion prediction (δ√(rate·t) = 0.251 unbounded, ~0.22
+    once clipped to [0,1]) — the rule's own variance, with nothing added.
+
+Every condition still equilibrates: CF rate within 0.6% of 1 Hz and drift at
+zero in all four. Coupling changes how tightly the cells agree with each other,
+not whether the loop settles.
+
+Caveat: n=1 per condition. The off/weak/moderate ordering is far larger than
+seed noise; moderate vs. strong is not resolved and should be read as "no
+further gain," not as an increase.
+
+### Individual-synapse drift: what the loop can and cannot regulate
+
+The spread *within* a Purkinje cell -- flagged above as having "no restoring
+force at all" -- was diagnosed directly. `experiments/run_drift_diagnostics.py`
+instruments a run with per-IO CF counts, gap-junction currents, per-CF [Ca]i
+peaks and per-Purkinje-cell weight means and SDs; `experiments/analyze_drift.py`
+turns those into the tables below. 600 s per condition, 2 seeds each, plus
+1800 s stationarity checks.
+
+**The variance lives in one place.** Decomposing the weight variance by the
+law of total variance over synapse < Purkinje cell < CF territory:
+
+| condition | within PKJ | between PKJ of one CF | between CF territories | var frac within |
+|---|---|---|---|---|
+| baseline | **0.2439** | 0.0106 | 0.0050 | **99.8%** |
+| gap junctions off | **0.2387** | 0.0104 | 0.1076 | 83.0% |
+| gap_g = 0.04 (strong) | **0.2573** | 0.0109 | 0.0045 | 99.8% |
+| heterogeneity cv 0.15 | **0.2387** | 0.0107 | 0.0037 | 99.8% |
+| DCN->IO misrouted | **0.2431** | 0.0102 | 0.0045 | 99.8% |
+
+Coupling off, moderate, strong; cell-to-cell heterogeneity; the feedback limb
+misrouted -- the within-cell column moves by 7% across manipulations that swing
+the between-territory column by 24x. **99.8% of the weight variance is inside
+single Purkinje cells, and nothing done to the olive touches it.**
+
+The between-PKJ column is not independently regulated either. All 8 Purkinje
+cells under one climbing fiber receive the same CF verdict, so no differential
+feedback exists between them; 0.0106 is just the within-cell walk averaged over
+500 synapses, 0.2439 / sqrt(500) = 0.0109.
+
+**The rule alone reproduces it.** `experiments/run_rule_montecarlo.py` drives
+the shipped `Plasticity` object with one Purkinje cell and a climbing fiber held
+at exactly the equilibrium rate -- no olive, no coupling, no loop, so every
+mechanism above is removed by construction:
+
+| rule | 350 s | 600 s | 1800 s | 3600 s |
+|---|---|---|---|---|
+| additive, shipped deltas | 0.2308 | 0.2637 | **0.2890** | 0.2873 |
+| additive, both deltas x0.2 | 0.0495 | 0.0647 | 0.1137 | 0.1636 |
+| soft-bound, `weight_dependence` 1.0 | **0.0245** | **0.0238** | **0.0244** | **0.0239** |
+| soft-bound, `weight_dependence` 0.5 | 0.0524 | 0.0506 | 0.0527 | 0.0508 |
+
+The shipped rule converges on 0.289 = 1/sqrt(12), the SD of the uniform
+distribution on [0, 1]: an individual synapse ends up knowing nothing about its
+own history. The 5-hour baseline's single-synapse autocorrelation puts a number
+on that -- **tau = 537 s**, after which a synapse has forgotten its weight.
+
+**Why.** The rule is additive: every LTD step is `delta_minus` and every LTP
+step `delta_plus` regardless of `w`. All 500 synapses on a cell resolve against
+the same climbing fiber, so the loop's restoring force enters each of them
+identically and cancels out of their differences. What is left is the part that
+is already synapse-specific -- which synapses happened to fire inside a window,
+a Poisson(2/s) count drawn independently per synapse -- and that has zero drift
+and no fixed point. The loop's only sensor is a Purkinje cell's firing rate,
+which depends on the SUM of its weights, so any redistribution that preserves
+the sum is invisible to it: 40 independent CF territories regulating 160,000
+weights.
+
+**A finer-grained climbing fiber does not help**, which rules out the obvious
+first guess. Running the same `Plasticity` object with one CF *per synapse*
+(n_pkj = N, n_pf = 1) instead of one per cell, at the same rate:
+
+| CF granularity | 350 s | 600 s | 1200 s | 1800 s |
+|---|---|---|---|---|
+| one CF per Purkinje cell (as built) | 0.2308 | 0.2637 | 0.2848 | **0.2888** |
+| one CF per synapse | 0.2338 | 0.2677 | 0.2884 | **0.2883** |
+
+Identical. Splitting the CF adds an independent noise source; it removes
+nothing, because the shared verdict was never contributing to the within-cell
+spread in the first place.
+
+**Two corrections, with different costs.** Both are magnitude changes; neither
+touches the LTD-then-else-LTP structure, the wiring, or any cell model.
+
+| | within-PKJ SD | CF rate | CF synchrony | mean w |
+|---|---|---|---|---|
+| baseline | 0.2439 | 1.0067 | 0.234 | 0.382 |
+| both deltas x0.2, ratio held at 9 | **0.0666** | **1.0067** | 0.229 | 0.357 |
+| `weight_dependence` 0.5 | **0.0494** | 1.157 | 0.238 | 0.415 |
+| `weight_dependence` 1.0 | **0.0223** | 1.381 | 0.241 | 0.413 |
+
+Scaling both deltas is strictly parameter-level and preserves every existing
+result -- equilibrium rate identical to four digits, same operating point, H2
+untouched, pool-size invariance untouched -- and reduces the spread in
+proportion to delta. It is a delay, not a cure: diffusion goes as delta^2, so
+filling [0, 1] moves from ~500 s to ~12,500 s. It also has independent support,
+since `delta_minus = 0.009` is ~13x larger than in-vitro PF->PKJ LTD, which runs
+~40% depression over ~300 pairings, about 0.0007 per pairing.
+
+**The stationarity check, 1800 s each, one seed.** This is the claim that
+matters, and short runs cannot make it:
+
+| t (s) | baseline within-PKJ SD | `weight_dependence` 1.0 |
+|---|---|---|
+| 100 | 0.1352 | **0.0223** |
+| 300 | 0.2069 | **0.0228** |
+| 600 | 0.2439 | **0.0225** |
+| 900 | 0.2533 | **0.0226** |
+| 1200 | 0.2591 | **0.0227** |
+| 1500 | 0.2599 | **0.0227** |
+| 1800 | **0.2595** | **0.0225** |
+
+Baseline climbs and saturates against the clip at 0.26 (the 5-hour run reads
+0.257, so this is the asymptote). Soft bounds sit at 0.0225 +- 0.0002 across an
+18x span of time, with **zero** synapses at either bound at any snapshot. And
+the olive is unaffected in the direction that matters: CF synchrony 0.245 vs
+0.232 baseline, mean Vm correlation 0.230 vs 0.249, nearest-neighbour Vm
+correlation 0.839 vs 0.832 -- the fix buys per-synapse stability without buying
+any additional synchrony.
+
+`weight_dependence` is the only setting that makes the spread *stationary*
+rather than slow, and it adds no synchrony (CF synchrony 0.241 vs 0.234
+baseline, Vm correlation 0.253-0.273 vs 0.235-0.251). Its cost is that the
+balance condition picks up a weight factor, `delta_minus/delta_plus =
+(P_LTP/P_LTD) * (1-w)/w`, so the equilibrium rate moves to 1.38 Hz at w = 0.413
+-- predicted 1.37, measured 1.381. **The deeper cost is that it couples rate and
+weight.** Under the additive rule the ratio sets the rate and the weight is free,
+which is exactly why the PF-pool sweep finds rate invariant while weight scales
+as 1/n_PF. With soft bounds the weight is pinned by the plasticity, so changing
+pool size would move the rate instead. Read that as a different model, not a
+tuning.
+
+### The olive is entrained, not equilibrated
+
+A separate finding from the same diagnostics, and one that matters on its own
+terms: the white paper's reason for electrical coupling is that it should pull
+outlier olivary cells back toward the population rate by passive Ohmic current,
+*without* synchronizing their spiking -- synchronous CF output being
+pathological (tremor; cf. harmaline). What the shipped configuration actually
+does is the second thing.
+
+| | per-cell CF rate SD | min-max (Hz) | CF spike counts over 600 s | CF sync |
+|---|---|---|---|---|
+| gap junctions off | 0.0273 | 0.947 - 1.063 | 595 - 625 | 0.052 |
+| `gap_g` 0.0143 (shipped) | **0.0000** | 1.007 - 1.007 | **609 - 609** | 0.234 |
+| `gap_g` 0.04 | **0.0000** | 1.000 - 1.000 | **603 - 603** | 0.296 |
+| heterogeneity cv 0.15 | **0.0000** | 1.000 - 1.000 | **608 - 608** | 0.229 |
+
+All 40 cells emit *exactly* the same number of climbing-fiber events. Min equals
+max; the rate SD is not small, it is zero. That is 1:1 entrainment, not a
+restoring force -- a restoring force leaves residual scatter. The k-th CF volley
+of every cell lands inside a 78 ms window (53 ms at `gap_g` 0.04), so the olive
+discharges as one population volley about once a second. 15% cell-to-cell
+conductance heterogeneity does not break it.
+
+The coupling current is not weak -- I_gap RMS 0.36 uA/cm^2 against a leak RMS of
+0.70, about half the leak -- so this is not a case of too little conductance.
+And the current does push in the restoring direction when there is anything to
+restore: in a run where per-cell dispersion survives, corr(I_gap, rate
+deviation) is -0.32 and -0.55. In the shipped configuration that correlation is
+undefined, because the dispersion it would act on is identically zero.
+
+**Why it goes all the way to entrainment: the desynchronizer is missing.** The
+paper's mechanism is variable burst size (1-3 spikes) producing a variable
+Ca-activated AHP, which shuffles which subthreshold cycle a cell next fires on.
+Neither half is present here. No CF event is a burst -- the fraction of ISIs
+below 100 ms is 0.0000 in every condition -- because CF events are modeled as
+single Ca2+ spikes, which is the MVP spec's own simplification. And the Ca2+
+load each spike deposits has a **CV of 0.005**: every AHP is the same size, so
+corr(peak [Ca]i, next ISI) is +0.02. There is nothing to shuffle the phase, and
+coupling meets no opposition.
+
+Two contributing conditions are worth recording. The olive's dominant
+subthreshold rhythm here peaks at 2.4 Hz, not the paper's 8-10 Hz, consistent
+with the cell's 3.00 Hz intrinsic rate -- so there are only ~3 cycles per
+inter-CF interval to be shuffled between, against ~10. And the one
+desynchronizing knob the model has, `noise_sigma`, cannot be used as-is: at 2.0
+it breaks the loop outright (CF rate 2.99 Hz, weights on the floor), because
+`dcn_io_gaba_gain` was fitted at `noise_sigma = 0` and is wrong once noise is
+added. Testing noise as a desynchronizer requires re-running
+`experiments/run_calibration.py` first; that was not done here.
+
+**None of this causes the individual-synapse drift** -- the section above shows
+the within-cell spread is identical whether the olive is entrained, dispersed,
+heterogeneous or misrouted. It is a real departure from the paper on its own
+account, not an explanation of the weights.
 
 ### Why the olive was perfectly synchronized
 
@@ -681,6 +971,72 @@ between them is visible at a glance. **It does not edit `config.py`.**
 | `--trace-window-s S` | 8 | Vm window at the end of each run the subthreshold correlation is measured over. |
 | `--topology T` | `nearest_k` | Held fixed across the sweep. Each topology gives a different partner count, so the same `gap_g` is a different **total** conductance. |
 
+### `experiments/run_gap_weight_sweep.py` — coupling vs. the spread of per-cell weight
+
+Runs `gap_g` = 0 / 0.005 / 0.0143 / 0.04 in parallel and plots the mean PF→PKJ
+weight of each of the 320 **Purkinje cells** — not the 40 territory means, and
+not individual synapses. A cell's own mean weight is what sets its firing rate,
+so it is the only part of the weight vector the loop can see or act on.
+
+```bash
+python experiments/run_gap_weight_sweep.py                    # 4 x 350 s, ~15 min
+python experiments/run_gap_weight_sweep.py --duration-s 120   # quicker, still past the transient
+```
+
+| flag | default | meaning |
+|---|---|---|
+| `--duration-s` | 350 | simulated seconds per condition |
+| `--record-every-ms` | 50 | weight sampling cadence (320 cells × run length) |
+| `--jobs` | 4 | conditions run in parallel |
+
+Writes `results/gap_weight_sweep.png`. See
+[what coupling can and cannot hold together](#what-coupling-can-and-cannot-hold-together).
+
+### `experiments/run_drift_diagnostics.py` — instrumented run for the drift question
+
+Drives `Simulation._step()` itself rather than `Simulation.run()`, so it can
+record what the normal `SimLog` does not: per-IO CF counts in coarse bins,
+per-IO net gap-junction current, the peak `[Ca]i` after every CF event and the
+interval that follows it, and per-Purkinje-cell weight *means and SDs* (the
+latter is what makes the variance decomposition possible). Writes one `.npz`.
+
+| flag | default | meaning |
+|---|---|---|
+| `--out PATH` | required | where to write the bundle |
+| `--duration-s S` | 600 | simulated seconds after burn-in |
+| `--bin-s S` / `--snap-s S` | 10 / 10 | binning for rates, and weight-snapshot cadence |
+| `--gap-g G`, `--gap-topology T`, `--gap-n-neighbors K` | config | coupling |
+| `--het-cv C`, `--io-noise-sigma S` | config | olivary heterogeneity / membrane noise |
+| `--open-loop`, `--ablate` | off | misroute or cut DCN→IO |
+| `--delta-plus`, `--delta-minus`, `--null-window-ms`, `--weight-dependence` | config | plasticity |
+
+### `experiments/analyze_drift.py` — read the bundles
+
+Prints one table per candidate mechanism (IO rate regulation, coupling current,
+synchrony, burst/AHP, the weight-variance decomposition). Takes globs;
+`--json-out` writes the scalars.
+
+### `experiments/run_rule_montecarlo.py` — the plasticity rule with no network
+
+Instantiates the shipped `sim.plasticity.Plasticity` with one Purkinje cell and
+a perfectly regular climbing fiber at the equilibrium rate, so every circuit
+mechanism is removed by construction and only the rule's own variance is left.
+Compares the additive rule, scaled deltas, the H3 null window and
+`weight_dependence`. Runs in minutes on one core.
+
+Note the null-window row is not a like-for-like comparison: holding the CF rate
+fixed at 1 Hz means `delta_minus/delta_plus = 9` no longer balances against a
+three-window scheme, so that row drifts onto the floor (mean w = 0.028) and its
+small SD is bound pileup, not stability. In the network the loop compensates by
+lowering the CF rate instead -- see the H3 table above.
+
+### `experiments/drift_figures.py` — the three figures
+
+`decomposition.png` (where the variance lives, by level of the circuit),
+`io_mechanisms.png` (per-cell rates, the CF raster, Vm correlation vs. ring
+distance, the `[Ca]i` histogram) and `fix.png` (rule-alone vs. network vs.
+synchrony). Pass `--mc-json` for the first panel of `fix.png`.
+
 ### `experiments/run_window_sweep.py` — H2, direct
 
 | flag | default | meaning |
@@ -815,7 +1171,7 @@ bad combination fails immediately rather than silently rewiring.
 | field | default | meaning |
 |---|---|---|
 | `e_exc_mv` | 0.0 | AMPA-like reversal (PF→PKJ). |
-| `e_inh_mv` | −75.0 | GABA_A / Cl⁻ reversal (PKJ→DCN, and the CF pause). |
+| `e_inh_mv` | −75.0 | GABA_A / Cl⁻ reversal (PKJ→DCN). |
 | `tau_pf_pkj_ms` | 5.0 | PF→PKJ conductance decay. |
 | `tau_pkj_dcn_ms` | 10.0 | PKJ→DCN conductance decay. |
 | `tau_dcn_io_ms` | 50.0 | DCN→IO decay, matching the olivary glomerulus' slow GABA response. **Deliberately short** — see [the feedback limb](#the-feedback-limb-exists-because-inhibition-is-grainy). |
@@ -824,8 +1180,9 @@ bad combination fails immediately rather than silently rewiring.
 | `dcn_io_gaba_gain` | 0.0974 | GABA_A conductance per DCN spike. Fitted: IO 1 Hz at DCN 15 Hz. |
 | `pkj_dcn_fitted_at_n_pkj` | 8 | The convergence `pkj_dcn_gain` was fitted at. |
 | `dcn_io_fitted_at_n_dcn` | 2 | The convergence `dcn_io_gaba_gain` was fitted at. |
-| `cf_pause_g` | 1.0 | Inhibitory conductance during the post-complex-spike pause — large enough to dominate `g_leak` and clamp the cell near `e_inh_mv`. |
-| `cf_pause_ms` | 10.0 | Pause duration after each CF event. |
+| `cf_pause_g` | 1.0 | CF conductance on PKJ — large enough to dominate `g_leak` and clamp the cell near `cf_pkj_reversal_mv`. |
+| `cf_pause_ms` | 10.0 | How long that conductance lasts after each CF event. |
+| `cf_pkj_reversal_mv` | 0.0 | Its reversal potential, and so the **sign of the climbing fiber**. `0.0` (= `e_exc_mv`) is excitatory, as the glutamatergic synapse is: each CF event drives a ~5-spike burst. `-75.0` (= `e_inh_mv`) restores the original model, in which the same conductance stood in for the post-complex-spike **pause**. The synaptic gains above were fitted at `-75.0`; see [the sign of the climbing fiber](#the-sign-of-the-climbing-fiber). |
 
 The two `*_fitted_at_*` fields are not cosmetic. `sim/simulate.py` scales each
 convergent gain by `fitted_at / actual`, so the total inhibition a DCN (and an
@@ -853,11 +1210,17 @@ olive's feedback limb depends on.
 | `null_window_ms` | 0.0 | Window after the LTD window in which a CF causes no change. `0` = two-window mode; `> 0` is H3. |
 | `delta_plus` | 0.001 | LTP increment. |
 | `delta_minus` | 0.009 | LTD decrement. The ratio `δ−/δ+` and `ltd_window_ms` together set the equilibrium rate: `1000 / (window × (1 + ratio))`. |
+| `weight_dependence` | 0.0 | How much each step's SIZE depends on the synapse's present weight. `0.0` is the spec's additive rule (fixed ±δ, bounds by clipping). `1.0` scales LTD by `w − w_min` and LTP by `w_max − w` — soft bounds, which give an individual synapse a fixed point and make the within-cell spread stationary. WHEN each happens is unchanged. Note it couples rate and weight: the balance condition gains a `(1−w)/w` factor, moving the equilibrium rate (1.01 → 1.38 Hz at `1.0`), and the pool-size rate invariance no longer holds. See [individual-synapse drift](#individual-synapse-drift-what-the-loop-can-and-cannot-regulate). |
 
 **Heterogeneity**
 
 | field | default | meaning |
 |---|---|---|
+| `homeostatic_scaling` | False | Optional activity-dependent PF→PKJ scaling: each Purkinje cell scales all its incoming PF weights according to its own smoothed firing-rate error. The replacement four-hour experiment enables this with zero IO heterogeneity and baseline PF gain; see [model and validation](docs/agent_reports/homeostasis_report.md). |
+| `homeostatic_target_hz` | 60.0 | Purkinje firing-rate target, from the original model calibration. |
+| `homeostatic_rate_tau_s` | 60.0 | Exponential rate-sensor time constant, seconds; a modeling assumption. |
+| `homeostatic_tau_s` | 14400.0 | Four-hour log-weight adaptation constant under unit normalized rate error; a modeling assumption, not a measured Purkinje-specific constant. |
+| `homeostatic_update_s` | 1.0 | Rate-bin and multiplicative-weight-update interval, seconds. |
 | `io_heterogeneity_cv` | 0.0 | Coefficient of variation of the per-cell `g_cal`/`g_kca`/`g_h`. Variability **between** cells, not noise **within** one: drawn once at construction, so the population is fixed and the cells stay deterministic. It adds no drive, bias or jitter. |
 | `io_heterogeneity_seed` | 0 | Seeds that draw, independently of `seed` and `connectivity_seed`, so one cell population can be re-used across input seeds. |
 
@@ -972,9 +1335,10 @@ A few implementation choices worth knowing:
   `C dV/dt = −g_L(V−E_L) − g_exc(V−E_exc) − g_inh(V−E_inh) + I_tonic` by
   exponential Euler, with single-exponential synaptic conductances. Baselines are
   configured as *rates*: `tonic_drive_for_rate` inverts the LIF f-I curve, so
-  `pkj_baseline_hz = 50` really means 50 Hz. The CF pause is modeled as a large
-  inhibitory **conductance**, so that (like the real post-complex-spike pause) it
-  both hyperpolarizes the cell and shunts the PF excitation arriving during it.
+  `pkj_baseline_hz = 50` really means 50 Hz. The CF input is modeled as a large
+  **conductance** rather than an injected current, so that it clamps the cell near
+  `cf_pkj_reversal_mv` and shunts the PF excitation arriving during it; that
+  reversal potential is what sets the climbing fiber's sign.
 - **Plasticity** (`sim/plasticity.py`) is retrospective: a PF spike is resolved
   `ltd_steps + null_steps` later, once it is known whether a CF landed in its LTD
   window, its null window, or neither. It is implemented as a circular buffer plus
@@ -1079,3 +1443,86 @@ not exhibit them.
   and no plasticity of their own. Only PF→PKJ is plastic.
 - **§2.2(1) of the spec is satisfied only approximately** — 27% of the microzone
   rather than 100%. See [What this costs](#what-this-costs-the-closed-loop-constraint).
+
+### Optional binary and cascade plasticity comparison
+
+`SimConfig(plasticity_mode="abbott_cascade")` and
+`SimConfig(plasticity_mode="mauk_cascade")` select the eight-state transition
+rules from CbmSim commit `d921c8561597657bfa595f651dc4208fbe165c42`.
+`plasticity_mode="binary"` is the two-state control. The default remains
+`"additive"`, with its original initialization and updates.
+
+States 0–3 express `cascade_low_weight=0.25`; states 4–7 express
+`cascade_high_weight=0.55`. Binary uses only states 3 and 4. Initial states are
+independent 50/50 shallow states 3/4, and weights are derived from those exact
+assignments. Set `two_level_initialization=True` for an additive control with
+the same assignments. This flag leaves additive clipping bounds unchanged;
+set `w_min=0.25, w_max=0.55` explicitly for the narrower-range additive control.
+
+Base transition probabilities are `cascade_p_ltd=0.9` and `cascade_p_ltp=0.1`.
+The existing PF eligibility windows, CF ownership and resolution delay apply;
+this is a transition-rule port, not a port of CbmSim's full event scheduler.
+Direct homeostatic weight scaling and nonzero `weight_dependence` are rejected
+with discrete rules because their interaction with fixed expressed strengths
+has not been defined. The additive/homeostatic combination remains supported.
+
+Initialization and transition RNGs use `[seed,701]` and `[seed,702]`, independent
+of PF, neuron and recording streams. Optional `weight_initialization_seed` and
+`plasticity_transition_seed` override them. Reproducible full-network comparisons
+require a specified simulation seed; the overrides independently fix the two
+new plasticity streams.
+
+For isolated prescribed-event assays,
+`plasticity.apply_resolved(weights, flat_indices, directions, uniforms=None)`
+accepts unique C-order flat synapse IDs and aligned directions -1 (LTD), 0
+(null), +1 (LTP). Optional uniforms align with all supplied IDs, including null
+IDs, and bypass the transition RNG; threshold comparison is strictly `<`.
+Without them, one draw is made per non-null event in supplied order, including
+endpoint events. Apply successive batches chronologically. This interface does
+not simulate PF/CF eligibility, shared-CF timing correlations or the circuit.
+
+The resumable pipeline additionally records per-cell eight-state occupancy,
+400 fixed tracked states and cumulative switch counts, and aggregate null-event,
+state-transition, weight-switch, LTD-switch and LTP-switch counts. State changes
+include changes that also switch strength. LTD/LTP eligibility counters are
+**not** weight-change counters. Whole-object checkpoints retain hidden states,
+transition RNG, switches and pending PF/CF history. The automatic analysis
+reports state occupancy and movement normalized by the expressed weight range;
+one-second snapshots cannot resolve individual within-bin dwell times.
+
+See [the comparison plan](docs/cascade_comparison_plan.md) for the acquisition,
+retention and reversal controls required before interpreting reduced wandering.
+
+The completed focused comparison is documented in
+[the comparison report](docs/agent_reports/cascade_comparison_report.md), with
+[execution and validation evidence](docs/agent_reports/cascade_experiment_report.md).
+The isolated prescribed-event assay can be reproduced into a new output directory:
+
+```bash
+python3 experiments/run_cascade_assay.py --out results/cascade_assay_new
+```
+
+It runs eight variants at three paired seeds, tracking 512 synapses through
+learning, 600 seconds of background retention, reversal, and another 600 seconds
+of retention. This synthetic rule assay omits shared-CF timing and circuit
+feedback. The completed full-network comparison and its immutable source are
+under `results/workflow_campaign/cascade_20260921T145424Z/`; its eight 120-second
+checks establish integration, not four-hour network stability.
+
+### Exact native acceleration
+
+Build the optional backend with `python3 -m sim.build_native` (a C compiler,
+Python development headers, and the installed NumPy are required). It fuses
+IO arithmetic while retaining NumPy's exponential and gap-matrix operations.
+PF generation uses the same PCG64 state transition and draws in their original
+order; other NumPy bit generators retain the Python path. Timestep, equations,
+precision, RNG streams, and plasticity rules are unchanged. The Python IO
+`substep` remains the scientific reference.
+
+Without a build, the simulator uses the Python reference. A stale, incomplete,
+or incompatible build raises an error. Frozen campaigns include the C source,
+build helper, binary, and build manifest in their source hashes and record the
+backend identity in their environment; resume requires the same identity.
+Rebuild and revalidate before creating a new snapshot on another environment.
+See `docs/agent_reports/realtime_performance_report.md` for measured throughput
+and exact-equivalence evidence.

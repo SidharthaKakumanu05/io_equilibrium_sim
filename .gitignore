@@ -1,3 +1,7 @@
 __pycache__/
 *.pyc
 results/
+
+# Agent stage evidence: frozen source snapshots and logs, 60 MB. Kept on disk,
+# not in git.
+docs/agent_reports/evidence/

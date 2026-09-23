@@ -1,0 +1,24 @@
+{
+  "source_sha256": "7f749bbf754755d20db2e18dce8ed9287a027348f09a2ab069c4a09b1c084dbd",
+  "binary_sha256": "967c6f0f119f0987ab86f54def1b72d16806d4bb0e66b670c2704dd44929f779",
+  "binary": "_io_native.cpython-310-x86_64-linux-gnu.so",
+  "command": [
+    "cc",
+    "-shared",
+    "-fPIC",
+    "-O3",
+    "-std=c99",
+    "-ffp-contract=off",
+    "-fno-fast-math",
+    "-fno-associative-math",
+    "-I/usr/include/python3.10",
+    "-I/home/sk57289/.local/lib/python3.10/site-packages/numpy/_core/include",
+    "/home/sk57289/io_equilibrium_sim/sim/_io_native.c",
+    "-o",
+    "/home/sk57289/io_equilibrium_sim/sim/_io_native.cpython-310-x86_64-linux-gnu.so"
+  ],
+  "compiler": "cc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0",
+  "python": "3.10.12 (main, Jun 11 2023, 05:26:28) [GCC 11.4.0]",
+  "numpy": "2.2.6",
+  "machine": "x86_64"
+}

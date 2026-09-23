@@ -1,5 +1,5 @@
 """All simulation parameters, defaults, and units."""
-from dataclasses import dataclass, field          # config is a plain dataclass, no validation logic
+from dataclasses import dataclass, field
 from typing import Optional                       # for fields that can be None (seed)
 
 
@@ -172,6 +172,14 @@ class SimConfig(_StrictParams):
     io_heterogeneity_seed: int = 0     # seeds the draw above, independently of `seed` and connectivity_seed,
                                        # so the same cell population can be re-used across input seeds
 
+    # --- activity-dependent PF -> PKJ homeostatic synaptic scaling ---
+    # Explicit experiment option; baseline and historical runs keep their original rule.
+    homeostatic_scaling: bool = False
+    homeostatic_target_hz: float = 60.0   # original Purkinje operating-point target
+    homeostatic_rate_tau_s: float = 60.0  # exponential average of each cell's spike rate
+    homeostatic_tau_s: float = 14400.0    # four-hour adaptation; modeling assumption
+    homeostatic_update_s: float = 1.0     # scale every PF input on each cell together
+
     connectivity_seed: int = 0        # seeds the randomized half of the PKJ->DCN overlap
 
     # --- PF Poisson input ---
@@ -266,10 +274,20 @@ class SimConfig(_StrictParams):
                                       # on nucleo-olivary convergence beyond which the loop cannot regulate itself
                                       # without some other noise source -- which is a real prediction of the model.
 
-    # --- CF -> PKJ inhibitory pause ---
-    cf_pause_g: float = 1.0           # inhibitory conductance (1/ms) switched on during the pause -- large enough
-                                      # to dominate g_leak and clamp the cell near e_inh_mv, i.e. a real pause
-    cf_pause_ms: float = 10.0         # pause duration after each CF event, ms
+    # --- CF -> PKJ ---
+    cf_pause_g: float = 1.0           # conductance (1/ms) switched on for cf_pause_ms after each CF event -- large
+                                      # enough to dominate g_leak and clamp the cell near cf_pkj_reversal_mv
+    cf_pause_ms: float = 10.0         # duration of that conductance after each CF event, ms
+    cf_pkj_reversal_mv: float = 0.0   # reversal potential of the CF conductance on PKJ. 0.0 (= e_exc_mv) makes the
+                                      # climbing fiber EXCITATORY, which is what the synapse is anatomically:
+                                      # glutamatergic, clamping the cell above threshold so each CF event drives a
+                                      # burst of about cf_pause_ms / t_ref_ms spikes instead of a gap. Set to -75.0
+                                      # (= e_inh_mv) to restore the original model, where the same conductance stood
+                                      # in for the post-complex-spike PAUSE -- the net effect the CF has on a Purkinje
+                                      # cell's simple-spike train, rather than the synapse's own sign. The two are
+                                      # opposite in sign, so everything downstream (PKJ rate -> DCN -> IO, and the
+                                      # loop's operating point) moves with this knob; the gains in this file were
+                                      # fitted at -75.0. See sim/neurons.PKJPopulation.
 
     # --- PF -> PKJ synaptic weights ---
     w_init: float = 0.5               # initial weight, all synapses
@@ -277,10 +295,37 @@ class SimConfig(_StrictParams):
     w_max: float = 1.0                # upper clip bound
 
     # --- plasticity ---
+    plasticity_mode: str = "additive"  # additive | binary | abbott_cascade | mauk_cascade
+    two_level_initialization: bool = False  # optional matched additive control; implicit for discrete rules
+    cascade_low_weight: float = 0.25
+    cascade_high_weight: float = 0.55
+    cascade_p_ltd: float = 0.9
+    cascade_p_ltp: float = 0.1
+    # Optional overrides; otherwise derive independent namespaces [seed, 701/702].
+    weight_initialization_seed: Optional[int] = None
+    plasticity_transition_seed: Optional[int] = None
     ltd_window_ms: float = 100.0      # window after a PF spike in which a CF event causes LTD
     null_window_ms: float = 0.0       # window after the LTD window with no weight change; 0 = 2-window mode
     delta_plus: float = 0.001         # LTP increment
     delta_minus: float = 0.009        # LTD decrement
+    weight_dependence: float = 0.0    # How much each plasticity step's SIZE depends on the synapse's present
+                                      # weight. 0.0 (shipped) is the spec's additive rule: every LTD step is
+                                      # exactly delta_minus and every LTP step exactly delta_plus, with
+                                      # [w_min, w_max] enforced by clipping. 1.0 scales the LTD step by
+                                      # (w - w_min) and the LTP step by (w_max - w) -- soft bounds. WHEN each
+                                      # happens is identical either way; this only sets the magnitude.
+                                      #
+                                      # It exists because the additive form gives an INDIVIDUAL synapse no
+                                      # fixed point. All 500 synapses on a Purkinje cell resolve against the
+                                      # same climbing fiber, so the loop's restoring force is common to all of
+                                      # them and cancels out of their differences: the within-cell spread is a
+                                      # driftless random walk that fills [0, 1] in ~10 simulated minutes, and
+                                      # no value of gap_g, delta_minus or ltd_window_ms changes that -- see
+                                      # experiments/analyze_drift.py and the README's drift section. Soft
+                                      # bounds give each synapse its own balance point, which makes the
+                                      # within-cell spread stationary. Note it also moves the equilibrium CF
+                                      # rate: the balance condition picks up a (w_max - w)/(w - w_min) factor,
+                                      # so H2's ratio prediction generalizes rather than holding as printed.
 
     # --- closed-loop connectivity ---
     enforce_closed_loop: bool = True  # False rotates each olivary cell's block of the nucleus by a full block width,

@@ -183,12 +183,16 @@ class LIFPopulation:
 
 class PKJPopulation(LIFPopulation):
     """Purkinje cells: LIF driven by weighted PF excitation, plus the brief
-    inhibitory pause that follows each climbing-fiber complex spike.
+    climbing-fiber conductance that follows each CF event.
 
-    The pause is modeled as a large inhibitory conductance switched on for
-    cf_pause_ms rather than as a subtracted current, so that (like the real
-    post-complex-spike pause) it both hyperpolarizes the cell and shunts
-    whatever PF excitation arrives during it."""
+    The CF input is modeled as a large conductance switched on for cf_pause_ms
+    rather than as an injected current, so that it clamps the cell near
+    e_pause_mv and shunts whatever PF excitation arrives during it. Its SIGN is
+    e_pause_mv's: at cfg.e_exc_mv (0 mV) the climbing fiber is excitatory, as
+    the glutamatergic synapse is, and each CF event drives a burst of about
+    pause_ms / t_ref_ms spikes; at cfg.e_inh_mv (-75 mV) the same machinery
+    reproduces the post-complex-spike pause instead. The kwarg keeps its
+    original name because the pause is what it was written for."""
 
     def __init__(self, *args, pause_g=1.0, pause_ms=10.0, e_pause_mv=-75.0, **kwargs):
         super().__init__(*args, **kwargs)
@@ -200,8 +204,8 @@ class PKJPopulation(LIFPopulation):
         self._pause_remaining_ms = np.zeros(self.n_units)
 
     def trigger_cf_pause(self, mask=None):
-        """(Re)start the pause countdown on the cells selected by `mask`
-        (a bool array over the population); None pauses all of them."""
+        """(Re)start the CF conductance countdown on the cells selected by
+        `mask` (a bool array over the population); None triggers all of them."""
         if mask is None:
             self._pause_remaining_ms[:] = self.pause_ms
         else:

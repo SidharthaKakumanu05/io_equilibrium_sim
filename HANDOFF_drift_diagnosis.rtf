@@ -1,0 +1,128 @@
+{\rtf1\ansi\ansicpg1252\deff0{\fonttbl{\f0\fswiss Helvetica;}{\f1\fmodern Courier New;}}\paperw12240\paperh15840\margl1080\margr1080\margt1080\margb1080
+\pard\sa180\sb60\f0\fs34\b io_equilibrium_sim \u8212? gr\u8594?PC synapse drift: handoff\b0\par
+\par
+\pard\sa80\f0\fs21 Written 2026-09-18 for a fresh agent (Codex) picking up overnight. Everything below is established with measurements in this repo; the "Open work" section at the end is what has NOT been done.\par
+\par
+\pard\sa80\f0\fs21 Working dir: /home/sk57289/io_equilibrium_sim (a git repo, with uncommitted changes predating this work \u8212? see "Files" below for exactly which diffs are mine). Nothing has been committed; the user has not asked for a commit.\par
+\par
+\pard\sa120\sb260\f0\fs26\b 1. The standing goal\b0\par
+\par
+\pard\sa80\f0\fs21 Diagnose why individual gr\u8594?PC (PF\u8594?PKJ) synapses drift, WITHOUT altering core architecture.\par
+\par
+\pard\sa80\f0\fs21 Model context the user supplied: gr\u8594?PC synapses undergo LTD near a CF input, LTP otherwise. They are stable only if CF/IO activity sits at equilibrium (~1 Hz), which is set by the feedback loop PC \u8594? DCN (inhibitory) \u8594? IO (inhibitory) \u8594? CF \u8594? LTD at PC. That loop only regulates the POPULATION AVERAGE IO rate. Individual IO neurons can still drift because the loop is "fully closed" only when (1) an IO neuron is influenced only by DCN neurons driven by the same PCs its own CF contacts, and (2) every PC an IO neuron contacts itself modulates that same IO. Real divergence (~8-10 PCs/IO) and convergence (~45 PCs/DCN) violate both.\par
+\par
+\pard\sa80\f0\fs21 Gap junctions are meant to pull outliers back toward equilibrium via passive Ohmic current \u8212? NOT to synchronize spiking. Synchronized IO firing is pathological (tremor, cf. harmaline). The expected desynchroniser: variable burst size (1-3 spikes) \u8594? variable post-spike AHP (Ca-activated K+ after voltage-gated Ca2+ entry) \u8594? shuffles which sub-threshold cycle (8-10 Hz) each neuron next fires on.\par
+\par
+\pard\sa120\sb260\f0\fs26\b 2. Hard constraints (still binding)\b0\par
+\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab No new or removed cell types. No changing IO\u8594?PC or PC\u8594?DCN ratios. No altering the three-neuron feedback topology.\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab Do not change dynamics already established as correct: gap junctions as passive Ohmic low-pass coupling; sub-threshold oscillation as timing reference; AHP as Ca-activated K+ following Ca2+ entry; LTD-then-else-LTP rule structure.\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab Do not retune coupling strength or window parameters as a "fix" before there is evidence of why the current config fails. Tuning is downstream of diagnosis.\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab Code changes limited to instrumentation, plus \u8212? once confirmed \u8212? the minimal parameter-level correction. Never a structural change.\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab User's added instruction, verbatim: "don't alter any rates or anything just to match the white paper, and don't diverge too far from real biology".\par
+\par
+\pard\sa120\sb260\f0\fs26\b 3. Verdict: the diagnosis is COMPLETE\b0\par
+\par
+\pard\sa80\f0\fs21 The drift is NOT caused by the olive. It is a degrees-of-freedom property of the plasticity rule's form, and it survives every manipulation of the olive.\par
+\par
+\pard\sa80\f0\fs21 Variance decomposition by level (synapse < Purkinje cell < CF territory), 600 s, 2 seeds:\par
+\par
+\pard\f1\fs17   condition               within PKJ   between PKJ   between CF   var frac within\par
+\pard\f1\fs17   baseline                  0.2439        0.0106       0.0050         99.8%\par
+\pard\f1\fs17   gap junctions off         0.2387        0.0104       0.1076         83.0%\par
+\pard\f1\fs17   gap_g 0.04 (strong)       0.2573        0.0109       0.0045         99.8%\par
+\pard\f1\fs17   IO heterogeneity cv 0.15  0.2387        0.0107       0.0037         99.8%\par
+\pard\f1\fs17   DCN\u8594?IO misrouted          0.2431        0.0102       0.0045         99.8%\par
+\par
+\pard\sa80\f0\fs21 The within-cell column moves 7% across manipulations that swing the between-territory column 24x. 99.8% of all weight variance is inside single Purkinje cells.\par
+\par
+\pard\sa80\f0\fs21 Driving the shipped Plasticity object with NO olive, NO coupling, NO loop, and a CF pinned at exactly 1 Hz reproduces the entire spread: 0.2308 @350 s \u8594? 0.2890 @1800 s \u8594? 0.2873 @3600 s, converging on 1/sqrt(12) = 0.2887, the SD of the uniform distribution on [0,1], with the mean flat at 0.507. Single-synapse autocorrelation from the earlier 5-hour campaign: tau = 537 s.\par
+\par
+\pard\sa80\f0\fs21 Why: the rule is additive, so step size ignores w \u8212? no per-synapse fixed point exists. All 500 synapses on a cell resolve against one shared CF verdict, so the loop's restoring force is common-mode and cancels out of their differences. And the loop's only sensor is PKJ rate, a function of sum(w), so any redistribution preserving the sum is invisible: 40 CF territories regulating 160,000 weights. The between-PKJ column is not independently regulated either \u8212? 0.0106 is just the within-cell walk over sqrt(500) (0.2439/sqrt(500) = 0.0109).\par
+\par
+\pard\sa120\sb260\f0\fs26\b 4. The five candidates, in the order the goal specified\b0\par
+\par
+\pard\fi-280\li400\sa80\f0\fs21 1.\tab Coupling conductance too weak \u8212? RULED OUT. I_gap RMS 0.358 uA/cm2 vs I_leak RMS 0.698, about half the leak.\par
+\par
+\pard\fi-280\li400\sa80\f0\fs21 2.\tab Coupling synchronizing instead of equilibrating \u8212? CONFIRMED. This is a real departure from the paper. With coupling on, all 40 IO cells emit IDENTICAL CF counts: 609/609 (gap_g 0.0143), 603/603 (0.04), 608/608 (het cv 0.15), and 1821/1821 over 1800 s. Per-cell CF rate SD is exactly 0.0000; min = max. The k-th volley of every cell lands within 78 ms (53 ms at strong coupling). That is 1:1 entrainment; a restoring force would leave residual scatter. Gap off: counts 595-625, rate SD 0.0273, range 0.947-1.063 Hz, 91 ms pairwise jitter, CF synchrony index 0.052 vs 0.234. Nearest-neighbour Vm correlation 0.83, floor ~0.11 at max ring distance. In the one run where dispersion survives, corr(I_gap, rate deviation) is -0.316 / -0.546 \u8212? so the current's SIGN is right; in the shipped config that correlation is undefined (nan) because the predictor has zero variance, not because of a code bug.\par
+\par
+\pard\fi-280\li400\sa80\f0\fs21 3.\tab Burst-dependent AHP missing/miscalibrated \u8212? CONFIRMED ABSENT, and this is why (2) happens. Zero ISIs under 100 ms in every condition (CF events are single Ca2+ spikes; the MVP spec excluded multi-spike bursts). Peak [Ca]i CV = 0.0052, so corr(Ca peak, next ISI) = +0.02. Nothing shuffles phase, so coupling meets no opposition. Two contributing conditions: the dominant sub-threshold rhythm peaks at 2.4 Hz, not 8-10 Hz (consistent with the 3.00 Hz intrinsic rate), giving only ~3 cycles per inter-CF interval to shuffle between instead of ~10; and the one available desynchroniser, noise_sigma, breaks the loop (see section 7).\par
+\par
+\pard\fi-280\li400\sa80\f0\fs21 4.\tab Feedback-loop closure violations \u8212? RULED OUT for this effect. Misrouting DCN\u8594?IO changes within-PKJ 0.2431 vs 0.2439 and between-IO 0.0045 vs 0.0050.\par
+\par
+\pard\fi-280\li400\sa80\f0\fs21 5.\tab delta+/delta- or LTD-window imbalance \u8212? NOT PRESENT; delta MAGNITUDE is the operative parameter. Mean weight is flat (0.34-0.38 over 1800 s; -0.001/hour over 5 hours), so the ratio balances correctly. What delta- = 0.009 sets is the diffusion rate.\par
+\par
+\pard\sa120\sb260\f0\fs26\b 5. The user's per-synapse-CF question \u8212? answered, tested\b0\par
+\par
+\pard\sa80\f0\fs21 "Would making it so that the climbing fibers affect individual synapses instead of individual Purkinje cells help the drifting?" No. Shared CF gives 0.2888 @1800 s; one CF per synapse gives 0.2883. Identical. Splitting the CF adds a noise source; the shared verdict was never what contributed. (A per-synapse POISSON CF read 0.2165, but with mean w 0.770 \u8212? ceiling pileup, because Poisson gives P(LTD) = 1-exp(-0.1) = 0.0952 instead of 0.100, which unbalances the ratio. That is higher diffusion, not lower.)\par
+\par
+\pard\sa120\sb260\f0\fs26\b 6. The two candidate corrections, measured\b0\par
+\par
+\pard\f1\fs17                             within-PKJ SD     CF rate    CF sync   Vm corr\par
+\pard\f1\fs17   baseline                   0.2595 @1800 s    1.008      0.232     0.249\par
+\pard\f1\fs17   both delta x0.2, ratio 9   0.0666 @600 s     1.0067     0.229     0.221\par
+\pard\f1\fs17   weight_dependence = 1.0    0.0225 @1800 s    1.366      0.245     0.230\par
+\par
+\pard\sa80\f0\fs21 Stationarity at t = 100/300/600/900/1200/1500/1800 s:\par
+\pard\f1\fs17   baseline:   0.1352 0.2069 0.2439 0.2533 0.2591 0.2599 0.2595  (saturating on the clip)\par
+\pard\f1\fs17   wd = 1.0:   0.0223 0.0228 0.0225 0.0226 0.0227 0.0227 0.0225  (flat; 0 synapses at\par
+\pard\f1\fs17               either bound at any snapshot)\par
+\pard\sa80\f0\fs21 Baseline run: rate 1.0078 Hz, counts 1821-1821, sync 0.232, Vm corr 0.249, nn 0.832. wd1 run:      rate 1.3656 Hz, counts 2476-2476, sync 0.245, Vm corr 0.230, nn 0.839.\par
+\par
+\pard\sa80\f0\fs21 Option A \u8212? scale both delta, hold the ratio at 9. Strictly parameter-level. Preserves the equilibrium rate to four digits, the operating point, H2's ratio prediction, and PF-pool- size rate invariance. Spread scales with delta (0.0666 measured vs 0.070 predicted unbounded), mean w 0.357. It DELAYS rather than cures: diffusion goes as delta^2, so filling [0,1] moves from ~500 s to ~12,500 s. Independent biological support: delta- = 0.009 is ~13x in-vitro PF-PC LTD (~40% over ~300 pairings ~= 0.0007/pairing). This is the recommended lead option.\par
+\par
+\pard\sa80\f0\fs21 Option B \u8212? weight_dependence = 1.0. The only setting that makes the spread STATIONARY, an 11x reduction, with no synchrony penalty. Costs: the balance condition picks up a (1-w)/w factor, moving equilibrium CF rate to 1.3656 Hz (predicted 1.37 from delta-/delta+ = (P_LTP/P_LTD)(1-w)/w at w = 0.421). The bigger cost is that it COUPLES rate to weight: under the additive rule delta-/delta+ sets the rate and weight is free, which is exactly why the earlier PF-pool sweep found rate invariant with weight scaling as 1/n_PF. With soft bounds, changing pool size would move the rate instead. Treat it as a different model, not a tuning. NOTE: the user said not to alter rates to match the white paper \u8212? B moves a rate, so it must not be adopted as default without the user saying so. It is deliberately left at 0.0 in config.\par
+\par
+\pard\sa120\sb260\f0\fs26\b 7. Known confounds and traps \u8212? read before re-running anything\b0\par
+\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab noise_sigma = 2.0 BREAKS THE LOOP. CF rate goes to 2.99 Hz (free-running), mean w 0.0032, 39% of synapses pinned. Root cause: dcn_io_gaba_gain = 0.0974 was fitted at noise_sigma = 0, per config's own comment. A clean membrane-noise test REQUIRES re-running experiments/run_calibration.py with noise on first. The "ionoise" conditions in ~/drift_diag are therefore inconclusive and confounded \u8212? do not cite them as results, only as a positive control for corr(I_gap, rate deviation).\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab The isolated Monte-Carlo null-window row reads SD 0.018, which LOOKS like stability but is bound pileup: mean w 0.028, i.e. weights crashed to the floor. With a CF at 1 Hz and a 200 ms null window, delta-/delta+ = 9 no longer balances (needs 7). Always check the MEAN alongside the SD.\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab corr(I_gap, rate deviation) = nan in coupled conditions is correct behaviour, not a bug: the predictor has identically zero variance because of the 1:1 entrainment.\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab /home/sk57289/longsim NO LONGER EXISTS. The 5-hour campaign's raw arrays are gone; only summary.json and the PNGs survive. A memory file claiming otherwise has been corrected.\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab pytest is NOT installed. Use: python3 -m unittest discover -s tests -q (97 tests, ~500 s, OK both before and after all changes).\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab The box is bandwidth-bound: keep simulation concurrency near 10, not 64.\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab cf_times is saved as a ragged object array; prefer ev_io / ev_t for analysis.\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab To wait on background runs, use a blocking loop (until <cond>; do sleep N; done) and wait for the task-completion notification. Repeated short polling wastes turns because wall-clock advances only seconds between turns.\par
+\par
+\pard\sa120\sb260\f0\fs26\b 8. Files\b0\par
+\par
+\pard\sa80\f0\fs21 Modified:\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab config.py \u8212? added `weight_dependence: float = 0.0` after delta_minus, with a comment block explaining it. 0.0 = the shipped additive rule (byte-identical behaviour); 1.0 scales the LTD step by (w - w_min) and the LTP step by (w_max - w) \u8212? soft bounds. WHEN each happens is identical either way; this only sets magnitude. Note the config dataclass has a _StrictParams guard that rejects unknown attribute assignment.\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab sim/plasticity.py \u8212? the only functional model change. Added the weight_dependence parameter to __init__, self._w_span = w_max - w_min, a docstring paragraph on why the additive rule has no per-synapse fixed point, and the branch:\par
+\pard\f1\fs17       wd = self.weight_dependence\par
+\pard\f1\fs17       if wd == 0.0:\par
+\pard\f1\fs17           weights[ltd_mask] -= self.delta_minus\par
+\pard\f1\fs17           weights[ltp_mask] += self.delta_plus\par
+\pard\f1\fs17       else:\par
+\pard\f1\fs17           frac_down = (weights - self.w_min) / self._w_span\par
+\pard\f1\fs17           frac_up   = (self.w_max - weights) / self._w_span\par
+\pard\f1\fs17           weights[ltd_mask] -= self.delta_minus*((1.0-wd) + wd*frac_down[ltd_mask])\par
+\pard\f1\fs17           weights[ltp_mask] += self.delta_plus *((1.0-wd) + wd*frac_up[ltp_mask])\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab sim/simulate.py \u8212? ONE line added: weight_dependence=cfg.weight_dependence, in the Plasticity(...) construction. The rest of that file's diff, plus sim/neurons.py, experiments/run_baseline.py and experiments/run_calibration.py, were PRE-EXISTING uncommitted changes from the earlier campaign. Verified. Not to be attributed to this work.\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab README.md \u8212? added "### Individual-synapse drift: what the loop can and cannot regulate", "### The olive is entrained, not equilibrated", the 1800 s stationarity table, four command-reference entries, and a weight_dependence row in the SimConfig table.\par
+\par
+\pard\sa80\f0\fs21 New (instrumentation only):\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab experiments/run_drift_diagnostics.py \u8212? instrumented driver; replicates burn-in then calls sim._step() in its own loop. Records cf_bins, pkj_bins, dcn_bins, gap_mean, gaba_mean, v_mean, snap_pkj_mean, snap_pkj_sd, snap_frac_lo/hi, snap_track, ev_io/ev_t/ev_capeak/ev_isi_prev, dual 5 s traces (v/ca/gaba/igap), final_weights, gap_matrix, cfg_json. I_gap is computed as sim.io.g_gap @ v - sim.io._gap_row_sum * v.\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab experiments/analyze_drift.py \u8212? variance_decomposition(w_pkj_mean, w_pkj_sd, io_of_pkj) -> (within, between_pkj, between_io); synchrony_index; analyze(path); a GROUPS list that drives one grouped table per candidate; --json-out.\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab experiments/run_rule_montecarlo.py \u8212? drives the SHIPPED Plasticity object with 1 PKJ and a perfectly regular CF at equilibrium (regular => P(LTD) = rate x window = 0.100 exactly). Five conditions. This is the isolated-rule control that carries the main finding.\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab experiments/drift_figures.py \u8212? fig_decomposition, fig_io, fig_fix \u8594? results/drift/\{decomposition,io_mechanisms,fix\}.png.\par
+\par
+\pard\sa80\f0\fs21 Output locations:\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab ~/drift_diag/*.npz and *.log \u8212? all run bundles (base, base_long, gap_off, gap_strong, het, ionoise, open_loop, dx02, wd05, wd1, wd1_long, rule_mc.json), seeds s0/s1.\par
+\pard\fi-280\li400\sa80\f0\fs21 \bullet\tab results/drift/*.png \u8212? the three figures.\par
+\par
+\pard\sa80\f0\fs21 Memory file: ~/.claude/projects/-home-sk57289/memory/io-synapse-drift-diagnosis.md, indexed in MEMORY.md.\par
+\par
+\pard\sa120\sb260\f0\fs26\b 9. Open work \u8212? what an overnight agent could usefully do\b0\par
+\par
+\pard\sa80\f0\fs21 None of this was requested by the user. Do not adopt a default parameter change without the user's say-so; the diagnosis is delivered and the stop condition is met.\par
+\par
+\pard\sa80\f0\fs21 Ranked by value:\par
+\par
+\pard\fi-280\li400\sa80\f0\fs21 1.\tab Seed replication of the 1800 s stationarity runs. Currently n = 1 each (base_long_s0, wd1_long_s0). The 600 s conditions are n = 2 and replicate to within 0.0002. Run base_long and wd1_long at seeds 1 and 2 and confirm the flat-vs-saturating contrast. Highest value per unit of compute, and it closes the one caveat stated in the report.\par
+\pard\fi-280\li400\sa80\f0\fs21 2.\tab Clean membrane-noise test. Re-run experiments/run_calibration.py with noise_sigma > 0 to refit dcn_io_gaba_gain, THEN test whether membrane noise desynchronises the olive without breaking equilibrium. This is the one candidate-3 sub-question left open, and it is the biologically honest desynchroniser (the spec's burst-AHP mechanism would require adding multi-spike bursts, which is arguably structural \u8212? ask first).\par
+\pard\fi-280\li400\sa80\f0\fs21 3.\tab Option A sweep at long duration. delta x0.2 was measured at 600 s only. Confirm at 1800 s that within-PKJ SD keeps tracking the sqrt-t diffusion prediction rather than saturating, and that CF rate stays at 1.007.\par
+\pard\fi-280\li400\sa80\f0\fs21 4.\tab Characterise the delay quantitatively: fit within-PKJ SD(t) against (delta+ + delta-) sqrt(lambda_LTD t) across delta scalings, and state the time to reach a given spread as a function of delta. This turns "delays rather than cures" into a number the user can trade against.\par
+\pard\fi-280\li400\sa80\f0\fs21 5.\tab Do NOT start structural work (burst generation, changing the sub-threshold frequency toward 8-10 Hz, per-synapse CF plumbing). Each is either ruled out by measurement or outside the constraints.\par
+\par
+}

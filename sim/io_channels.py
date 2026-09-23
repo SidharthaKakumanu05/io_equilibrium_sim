@@ -48,6 +48,7 @@ protocols and unit tests can drive one cell in isolation.
 """
 import math
 import numpy as np
+from .native import advance_io
 
 _EXP_CLAMP = 60.0   # |x| bound for exp(), avoids overflow at extreme V during transients
 
@@ -320,9 +321,12 @@ class IOPopulation:
         g_gaba = np.broadcast_to(np.asarray(g_gaba, dtype=float), (self.n,))
         self._g_gaba = g_gaba                                        # stash for currents()
         noise_block = self.rng.standard_normal((self.n_sub, self.n))  # one RNG call per outer step, not per substep
-        fired = np.zeros(self.n, dtype=bool)
-        for i in range(self.n_sub):
-            fired |= self.substep(g_gaba, noise_block[i])            # a burst is one CF event regardless of substep count
+        if advance_io is not None:
+            fired = advance_io(self, g_gaba, noise_block, self.n_sub)
+        else:
+            fired = np.zeros(self.n, dtype=bool)
+            for i in range(self.n_sub):
+                fired |= self.substep(g_gaba, noise_block[i])            # a burst is one CF event regardless of substep count
         self._update_display_rate(dt_ms, fired)
         return fired
 

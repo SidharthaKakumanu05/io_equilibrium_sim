@@ -85,6 +85,10 @@ class SimLog:
     # --- slow traces, sampled every cfg.record_every_ms ---
     t_ms: np.ndarray = None
     mean_weight: np.ndarray = None                     # (T, n_io) mean PF->PKJ weight per climbing-fiber territory
+    pkj_mean_weight: np.ndarray = None                 # (T, n_pkj) mean PF->PKJ weight per PURKINJE CELL. The
+                                                       # territory means above average 8 cells together; this is the
+                                                       # per-cell quantity the loop actually regulates, since a cell's
+                                                       # own mean weight is what sets its firing rate.
     sample_weights: np.ndarray = None                  # (T, n_tracked) individually tracked synapses
     tracked_synapses: np.ndarray = None                # (n_tracked, 2) the (pkj_row, pf_col) each column came from
 
@@ -109,6 +113,8 @@ class SimLog:
 class Simulation:
     def __init__(self, cfg: SimConfig):
         self.cfg = cfg
+        if cfg.plasticity_mode != "additive" and cfg.homeostatic_scaling:
+            raise ValueError("Discrete plasticity cannot use direct homeostatic weight scaling")
         self.conn = build_connectivity(
             n_io=cfg.n_io, n_dcn=cfg.n_dcn, n_pkj_per_io=cfg.n_pkj_per_io,
             n_pkj_per_dcn=cfg.n_pkj_per_dcn, n_dcn_per_pkj=cfg.n_dcn_per_pkj,
@@ -145,7 +151,7 @@ class Simulation:
             n_pkj, cfg.dt_ms, cfg.pkj.tau_m_ms, cfg.pkj.v_th_mv, cfg.pkj.v_reset_mv, cfg.pkj.e_leak_mv,
             cfg.pkj.t_ref_ms, cfg.pkj_baseline_hz, cfg.tau_pf_pkj_ms, cfg.tau_pkj_dcn_ms,
             cfg.e_exc_mv, cfg.e_inh_mv, noise_sigma_mv=cfg.pkj.noise_sigma_mv, rng=lif_rng,
-            pause_g=cfg.cf_pause_g, pause_ms=cfg.cf_pause_ms, e_pause_mv=cfg.e_inh_mv,
+            pause_g=cfg.cf_pause_g, pause_ms=cfg.cf_pause_ms, e_pause_mv=cfg.cf_pkj_reversal_mv,
         )
         self.dcn = DCNPopulation(
             n_dcn, cfg.dt_ms, cfg.dcn.tau_m_ms, cfg.dcn.v_th_mv, cfg.dcn.v_reset_mv, cfg.dcn.e_leak_mv,
@@ -178,11 +184,29 @@ class Simulation:
                              else cfg.dcn_io_gaba_gain * self.dcn_io_scale)
 
         self.weights = np.full((n_pkj, cfg.n_pf_per_pkj), cfg.w_init, dtype=float)
+        self._pf_drive = np.empty_like(self.weights)   # scratch for the PF->PKJ drive product
         self.plasticity = Plasticity(
             n_pkj, cfg.n_pf_per_pkj, cfg.dt_ms, cfg.ltd_window_ms, cfg.delta_plus, cfg.delta_minus,
             null_window_ms=cfg.null_window_ms, w_min=cfg.w_min, w_max=cfg.w_max,
             cf_source_of_pkj=self.io_of_pkj,   # each PKJ resolves against the one CF that contacts it
+            weight_dependence=cfg.weight_dependence, mode=cfg.plasticity_mode,
+            low_weight=cfg.cascade_low_weight, high_weight=cfg.cascade_high_weight,
+            p_ltd=cfg.cascade_p_ltd, p_ltp=cfg.cascade_p_ltp,
+            transition_seed=(cfg.plasticity_transition_seed if cfg.plasticity_transition_seed is not None
+                             else (None if seed is None else [seed, 702])),
         )
+
+        if cfg.plasticity_mode != "additive" or cfg.two_level_initialization:
+            self.plasticity.initialize_weights(self.weights,
+                seed=(cfg.weight_initialization_seed if cfg.weight_initialization_seed is not None
+                      else (None if seed is None else [seed, 701])))
+        self.homeostasis = None
+        if cfg.homeostatic_scaling:
+            from sim.homeostasis import HomeostaticScaling
+            self.homeostasis = HomeostaticScaling(
+                n_pkj, cfg.dt_ms, cfg.homeostatic_target_hz,
+                cfg.homeostatic_rate_tau_s, cfg.homeostatic_tau_s,
+                cfg.homeostatic_update_s, cfg.w_min, cfg.w_max)
 
         self.t_ms = 0.0
         self._plasticity_on = True
@@ -210,7 +234,8 @@ class Simulation:
 
         # --- PF -> PKJ: weighted excitatory conductance from this step's Poisson draw ---
         pf_spikes = generate_pf_spikes(cfg.pf_rate_hz, dt, self.rng, self.weights.shape)
-        self.pkj.exc.add(cfg.pf_pkj_gain * (self.weights * pf_spikes).sum(axis=1))
+        np.multiply(self.weights, pf_spikes, out=self._pf_drive)   # preallocated; same values, same order
+        self.pkj.exc.add(cfg.pf_pkj_gain * self._pf_drive.sum(axis=1))
         pkj_spiked = self.pkj.step()
 
         # --- PKJ -> DCN: inhibitory conductance, one increment per presynaptic spike ---
@@ -224,9 +249,11 @@ class Simulation:
 
         # --- CF back onto PKJ, and the plasticity it resolves ---
         if cf_events.any():
-            self.pkj.trigger_cf_pause(cf_events[self.io_of_pkj])   # each PKJ is paused by its own climbing fiber
+            self.pkj.trigger_cf_pause(cf_events[self.io_of_pkj])   # each PKJ is driven by its own climbing fiber
         if self._plasticity_on:
             self.plasticity.step(pf_spikes, cf_events, self.weights)
+        if self.homeostasis is not None:
+            self.homeostasis.step(pkj_spiked, self.weights, self._plasticity_on)
 
         return pf_spikes, pkj_spiked, dcn_spiked, cf_events
 
@@ -265,6 +292,7 @@ class Simulation:
         n_slow = (n_steps + record_every - 1) // record_every
         t_slow = np.empty(n_slow)
         mean_w = np.empty((n_slow, n_io))                      # mean weight per climbing-fiber territory
+        pkj_mean_w = np.empty((n_slow, n_pkj))                 # mean weight per Purkinje cell
         sample_w = np.empty((n_slow, len(self.tracked_synapses)))
         pkj_group_slices = [np.flatnonzero(self.io_of_pkj == i) for i in range(n_io)]
 
@@ -285,8 +313,11 @@ class Simulation:
 
             if i % record_every == 0:
                 t_slow[slow_i] = self.t_ms
+                row_means = self.weights.mean(axis=1)              # (n_pkj,), computed once and reused below
+                pkj_mean_w[slow_i] = row_means
                 for g, sl in enumerate(pkj_group_slices):
-                    mean_w[slow_i, g] = self.weights[sl].mean()
+                    mean_w[slow_i, g] = row_means[sl].mean()          # cells per territory are equinumerous, so the
+                                                                      # mean of the row means IS the territory mean
                 sample_w[slow_i] = self.weights[tr_rows, tr_cols]
                 slow_i += 1
 
@@ -303,6 +334,7 @@ class Simulation:
         log.io_spikes, log.pkj_spikes, log.dcn_spikes = io_rec.as_trains(), pkj_rec.as_trains(), dcn_rec.as_trains()
         log.pf_spikes, log.pf_recorded = pf_rec.as_trains(), self.pf_recorded
         log.t_ms, log.mean_weight, log.sample_weights = t_slow[:slow_i], mean_w[:slow_i], sample_w[:slow_i]
+        log.pkj_mean_weight = pkj_mean_w[:slow_i]
         log.tracked_synapses = self.tracked_synapses
         log.trace_t_ms, log.trace_io_v, log.trace_io_ca = trace_t, trace_io_v, trace_io_ca
         log.trace_io_gaba, log.trace_pkj_v, log.trace_dcn_v = trace_io_g, trace_pkj_v, trace_dcn_v
