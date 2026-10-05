@@ -260,7 +260,7 @@ class Simulation:
     # --- the run ----------------------------------------------------------
 
     def run(self, n_trials=None, trial_ms=None, record_every_ms=None, burn_in_s=None, trace_window_s=None,
-            raster_paths=None, on_trial_end=None):
+            raster_paths=None, on_trial_end=None, on_step=None):
         """Burn in, run the trials, record, and return a SimLog. Arguments left
         as None use the values in the config.
 
@@ -269,6 +269,9 @@ class Simulation:
         on_trial_end: optional function called after every trial as
                       on_trial_end(trial, cf_counts, mean_weight, seconds), e.g. to print
                       progress. seconds is how long the trial took to compute.
+        on_step:      optional function called after every step of every trial as
+                      on_step(sim, trial, ts, t_ms, pf_spikes, cf_events, pkj_spiked, dcn_spiked),
+                      e.g. the live view (sim/live_view.py).
         """
         cfg = self.cfg
         n_trials = cfg.n_trials if n_trials is None else n_trials
@@ -345,6 +348,8 @@ class Simulation:
                         writers[kind].record(ts, spiked)
                 if "pf" in writers:
                     writers["pf"].record(ts, pf_global_id[pf_sample])
+                if on_step is not None:
+                    on_step(self, trial, ts, self.t_ms, pf_spikes, cf_events, pkj_spiked, dcn_spiked)
 
                 # every record_every steps: save the weights
                 if i % record_every == 0:

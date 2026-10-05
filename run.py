@@ -4,6 +4,7 @@
     python3 run.py                     # run with the settings below
     python3 run.py NUM_TRIALS=120      # override any setting on the command line
     python3 run.py COUPLING=0 SEED=3   # ...as many as you like
+    python3 launcher.py                # or set everything and run it from a web page
 
 WHAT IS BEING SIMULATED
 -----------------------
@@ -47,6 +48,8 @@ Read the files in this order. Each one is commented to be read top to bottom.
   9. sim/plasticity.py   the LTD/LTP learning rule
  10. sim/analysis.py     the summary numbers and the figures
  11. sim/rasters.py      raster files in CbmSim's format (writing and reading)
+ 12. sim/live_view.py    the live view in the browser (+ the page, sim/live_view.html)
+ 13. launcher.py         runs the simulation from that page, with every setting as a form
 
 sim/network_graph.py and sim/network_viz.py draw the wiring diagram. run.py
 does not call them.
@@ -114,6 +117,13 @@ IO_HETEROGENEITY_CV   = 0.0     # make olive cells differ from each other by thi
                                 # (0.15 = 15% spread in their channel densities).
                                 # Fixed per cell, not random noise over time.
 
+# --- live view in a web browser (sim/live_view.py) -----------------------
+LIVE_VIEW             = 1       # 1 = show the network live at http://localhost:LIVE_PORT
+                                #     while it runs. Costs a few % of speed. 0 = off.
+LIVE_PORT             = 8765    # first port tried; if another run is using it, the
+                                # next free one is used. The address is printed at start.
+LIVE_FRAME_MS         = 50.0    # simulated time per update of the page
+
 # --- output: what gets saved in OUTPUT_DIR (1 = save, 0 = skip) ---------
 OUTPUT_DIR            = "results/run"
 
@@ -161,6 +171,7 @@ IO_HETEROGENEITY_SEED = 0         # seed for IO_HETEROGENEITY_CV's per-cell draw
 # ==========================================================================
 #  Machinery below: command-line overrides, sanity checks, and the run itself.
 # ==========================================================================
+import ast
 import sys
 from pathlib import Path
 
@@ -186,8 +197,8 @@ def _apply_overrides(argv):
             hint = f"  did you mean: {', '.join(sorted(close))}" if close else ""
             raise SystemExit(f"unknown setting {key!r}.{hint}")
         try:
-            g[key] = eval(raw, {"__builtins__": {}}, {"None": None, "True": True, "False": False})
-        except Exception:
+            g[key] = ast.literal_eval(raw)              # numbers, None, True/False, quoted strings only
+        except (ValueError, SyntaxError):
             g[key] = raw
 
 
@@ -262,6 +273,7 @@ def build_config():
 
 def main(argv):
     # 1. Read the command line and check the settings.
+    sys.stdout.reconfigure(line_buffering=True)        # print each line at once, even into a log file
     _apply_overrides(argv)
     n_pkj = check_settings()
 
@@ -307,7 +319,26 @@ io_equilibrium_sim
               f"CF {cf_counts.mean() * 1000.0 / TRIAL_MS:6.3f} Hz   "
               f"mean weight {mean_weight:.4f}   ({seconds:.1f} s)")
 
-    log = Simulation(cfg).run(raster_paths=raster_paths, on_trial_end=report_trial)
+    sim = Simulation(cfg)
+    view = None
+    if LIVE_VIEW:
+        from sim.live_view import LiveView
+        view = LiveView(port=LIVE_PORT, frame_ms=LIVE_FRAME_MS)
+        url = view.start(sim, header={
+            "network": f"{N_IO} IO / {N_DCN} DCN / {n_pkj} PKJ / {n_pkj * N_PF_PER_PKJ:,} PF",
+            "coupling": f"{COUPLING_STRENGTH:g} mS/cm², {COUPLING_NEIGHBOURS} per side" if COUPLING else "off",
+            "plasticity": f"LTD {LTD_WINDOW_MS:g} ms, d-/d+ = {DELTA_MINUS / DELTA_PLUS:g}",
+            "loop": ("DCN→IO CUT" if CUT_DCN_TO_IO else "intact") + ("" if CLOSED_LOOP else ", misrouted"),
+            "complex spike": f"{CF_BURST_SPIKES} spikes" if CF_BURST_SPIKES else "off",
+            "seed": SEED, "output": OUTPUT_DIR,
+        }, predicted_hz=round(predicted_hz, 3))
+        view.status("burn-in")
+        print(f"  live view      {url}   (open in a browser; VS Code forwards the port)\n")
+
+    log = sim.run(raster_paths=raster_paths, on_trial_end=report_trial,
+                  on_step=view.on_step if view else None)
+    if view:
+        view.finish()
 
     # 5. Reduce the log to a handful of numbers (sim/analysis.py) and print them.
     s = summarize(log)

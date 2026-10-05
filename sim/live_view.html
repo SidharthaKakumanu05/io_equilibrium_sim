@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>io_equilibrium_sim live</title>
+<!--
+  The live view page, served by sim/live_view.py. It receives a stream of
+  messages from /events (Server-Sent Events) and draws everything on canvases:
+
+    init   network layout + history so far   -> reset and rebuild everything
+    frame  50 ms of simulated activity        -> update every panel
+    status / done                             -> the status pill
+
+  Plain JavaScript, no libraries, so it works offline.
+-->
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0d1117; --panel: #151b23; --line: #262f3a; --text: #e6edf3; --muted: #8b949e;
+    --pf: #9aa5b1; --pkj: #4c8dff; --dcn: #f0a030; --io: #ff5a5a; --gap: #b67cff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+               font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { display: flex; flex-direction: column; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px;
+           padding: 10px 16px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  .pill { padding: 1px 9px; border-radius: 999px; background: #30363d; font-size: 12px; }
+  .pill.running { background: #1d6b3c; } .pill.finished { background: #3b4a8a; }
+  .pill.waiting { background: #6b4f1d; }
+  .stat { color: var(--muted); }
+  .stat b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cfg { width: 100%; color: var(--muted); font-size: 12px; }
+  main { flex: 1; min-height: 0; display: grid; gap: 12px; padding: 12px 16px;
+         grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+           padding: 8px 10px; display: flex; flex-direction: column; min-height: 0; position: relative; }
+  .panel h2 { font-size: 12px; font-weight: 600; margin: 0 0 6px; color: var(--muted);
+              display: flex; justify-content: space-between; gap: 8px; }
+  .panel h2 span { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 500; }
+  .panel canvas { width: 100%; flex: 1; min-height: 0; display: block; }
+  #net { cursor: grab; touch-action: none; }
+  #net:active { cursor: grabbing; }
+  #right { display: grid; gap: 12px; min-height: 0;
+           grid-template-rows: 1.35fr 0.8fr 0.75fr 0.75fr 0.75fr; }
+  .legend { position: absolute; left: 14px; bottom: 12px; display: flex; flex-direction: column;
+            gap: 3px; font-size: 12px; background: rgba(13,17,23,0.75); padding: 8px 10px;
+            border-radius: 6px; }
+  .legend label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+  .ln { display: inline-block; width: 14px; height: 2px; }
+  .hint { position: absolute; right: 14px; bottom: 12px; color: var(--muted); font-size: 11px; }
+  .wbar { display: inline-block; width: 60px; height: 8px; border-radius: 2px; vertical-align: middle;
+          background: linear-gradient(90deg, #22344d, #2a9d8f, #ffd84a); }
+  /* settings sidebar and console: only when served by launcher.py */
+  #app { flex: 1; min-height: 0; display: flex; }
+  #app > main { flex: 1; min-width: 0; }
+  #side { width: 360px; flex: none; display: flex; flex-direction: column; min-height: 0;
+          border-right: 1px solid var(--line); background: #10151c; }
+  #side[hidden] { display: none; }
+  .side-top { display: flex; gap: 8px; padding: 10px 12px 6px; }
+  .side-top button { flex: 1; }
+  button { font: inherit; color: var(--text); background: #21262d; border: 1px solid #30363d;
+           border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+  button:hover:not(:disabled) { background: #2b313a; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  button.primary { background: #1f6f3f; border-color: #2a8a50; font-weight: 600; }
+  button.primary:hover:not(:disabled) { background: #238045; }
+  button.danger { background: #6e2a2a; border-color: #8a3535; }
+  #side-msg { padding: 0 12px 6px; font-size: 12px; color: var(--muted); min-height: 1.4em; overflow-wrap: anywhere; }
+  #side-msg.err { color: #ff8a8a; }
+  .tabs { display: flex; gap: 2px; padding: 0 12px; border-bottom: 1px solid var(--line); }
+  .tabs button { border: none; border-bottom: 2px solid transparent; border-radius: 0; background: none;
+                 color: var(--muted); padding: 6px 10px; }
+  .tabs button.on { color: var(--text); border-bottom-color: var(--pkj); }
+  .tabpane { flex: 1; min-height: 0; overflow: auto; padding: 8px 12px 16px; }
+  .tabpane[hidden] { display: none; }
+  #filter { width: 100%; margin: 2px 0 8px; }
+  input[type=text], input[type=number] { font: inherit; color: var(--text); background: #0d1117;
+           border: 1px solid #30363d; border-radius: 5px; padding: 3px 6px; width: 130px; }
+  input:focus { outline: 1px solid var(--pkj); }
+  details.sec { border-top: 1px solid var(--line); padding: 6px 0; }
+  details.sec > summary { cursor: pointer; font-weight: 600; font-size: 12px; color: var(--text); padding: 2px 0; }
+  details.sec > summary::first-letter { text-transform: uppercase; }
+  .note { color: var(--muted); font-size: 11.5px; margin: 6px 0 2px; }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; padding: 5px 0; }
+  .row .nm { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+  .row .hp { grid-column: 1 / -1; color: var(--muted); font-size: 11.5px; }
+  .row.changed .nm { color: #ffd84a; }
+  .row.changed input[type=text], .row.changed input[type=number] { border-color: #b8952e; }
+  .row.bad input { border-color: #ff5a5a !important; }
+  .switch { position: relative; width: 34px; height: 18px; }
+  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; cursor: pointer; z-index: 1; }
+  .switch span { position: absolute; inset: 0; background: #30363d; border-radius: 9px; transition: 0.15s; }
+  .switch span::after { content: ""; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px;
+                        border-radius: 50%; background: #c9d1d9; transition: 0.15s; }
+  .switch input:checked + span { background: #2a8a50; }
+  .switch input:checked + span::after { left: 18px; }
+  #console { margin: 0; font: 11.5px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap;
+             overflow-wrap: anywhere; color: #c9d1d9; }
+  .pill.stopped, .pill.failed { background: #7a2b2b; }
+  @media (max-width: 1000px) {
+    main { grid-template-columns: 1fr; }
+    #app { flex-direction: column; }
+    #side { width: auto; max-height: 60vh; border-right: none; border-bottom: 1px solid var(--line); }
+    #netpanel { height: 70vh; }
+    #right { grid-template-rows: none; }
+    #right .panel { height: 220px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>io_equilibrium_sim · live</h1>
+  <span id="status" class="pill waiting">connecting</span>
+  <span class="stat">trial <b id="s-trial">–</b></span>
+  <span class="stat">sim time <b id="s-time">–</b></span>
+  <span class="stat">speed <b id="s-speed">–</b></span>
+  <span class="stat">time left <b id="s-eta">–</b></span>
+  <span class="stat">CF <b id="s-cf">–</b></span>
+  <span class="stat">mean weight <b id="s-w">–</b></span>
+  <div class="cfg" id="cfg"></div>
+</header>
+
+<div id="app">
+<aside id="side" hidden>
+  <div class="side-top">
+    <button id="run-btn" class="primary">▶ Run</button>
+    <button id="stop-btn" class="danger" disabled>■ Stop</button>
+    <button id="reset-btn" title="Set every value back to what run.py says">Reset</button>
+  </div>
+  <div id="side-msg"></div>
+  <div class="tabs"><button data-tab="settings" class="on">Settings</button><button data-tab="console">Console</button></div>
+  <div class="tabpane" id="tab-settings">
+    <input type="text" id="filter" placeholder="filter settings…">
+    <div id="form"></div>
+  </div>
+  <div class="tabpane" id="tab-console" hidden><pre id="console"></pre></div>
+</aside>
+<main>
+  <section class="panel" id="netpanel">
+    <h2>Network <span id="net-note"></span></h2>
+    <canvas id="net"></canvas>
+    <div class="legend">
+      <div><span class="sw" style="background:var(--pf)"></span> PF (2 of 500 per PKJ shown)</div>
+      <div><span class="sw" style="background:var(--pkj)"></span> PKJ</div>
+      <div><span class="sw" style="background:var(--dcn)"></span> DCN</div>
+      <div><span class="sw" style="background:var(--io)"></span> IO (flash = CF event)</div>
+      <div style="height:4px"></div>
+      <label><input type="checkbox" data-edge="0" checked> PF→PKJ, by weight <span class="wbar"></span></label>
+      <label><input type="checkbox" data-edge="2" checked><span class="ln" style="background:var(--pkj)"></span> PKJ→DCN</label>
+      <label><input type="checkbox" data-edge="3" checked><span class="ln" style="background:var(--dcn)"></span> DCN→IO</label>
+      <label><input type="checkbox" data-edge="1" checked><span class="ln" style="background:var(--io)"></span> CF (IO→PKJ)</label>
+      <label><input type="checkbox" data-edge="4" checked><span class="ln" style="background:var(--gap)"></span> gap junctions</label>
+      <label><input type="checkbox" id="spin" checked> rotate</label>
+    </div>
+    <div class="hint">drag to rotate · scroll to zoom · double-click to reset</div>
+  </section>
+
+  <div id="right">
+    <section class="panel"><h2>Spike raster, last 2.5 s <span>IO · DCN · PKJ</span></h2><canvas id="raster"></canvas></section>
+    <section class="panel"><h2>IO membrane potential, last 1 s <span id="iov-note"></span></h2><canvas id="iov"></canvas></section>
+    <section class="panel"><h2>CF rate, 1 s window <span id="cf-note"></span></h2><canvas id="c-cf"></canvas></section>
+    <section class="panel"><h2>PKJ and DCN rate, 1 s window <span id="rate-note"></span></h2><canvas id="c-rate"></canvas></section>
+    <section class="panel"><h2>Mean PF→PKJ weight <span id="w-note"></span></h2><canvas id="c-w"></canvas></section>
+  </div>
+</main>
+</div>
+
+<script>
+"use strict";
+// ---------------------------------------------------------------------------
+//  State
+// ---------------------------------------------------------------------------
+const COLORS = { pf: "#9aa5b1", pkj: "#4c8dff", dcn: "#f0a030", io: "#ff5a5a", gap: "#b67cff",
+                 bg: "#151b23", grid: "#262f3a", text: "#8b949e" };
+const KIND_COLOR = [COLORS.pf, COLORS.pkj, COLORS.dcn, COLORS.io];   // node kind code -> colour
+let DIM_COLOR = [];                                                  // the same, faded toward the background
+const TRACE_COLORS = ["#ff5a5a", "#ffb35a", "#5ad1ff", "#b67cff", "#7ee787", "#ff7bd5"];
+const RASTER_MS = 2500, TRACE_MS = 1000, RATE_WINDOW_MS = 1000;
+
+let S = null;        // everything about the current run; rebuilt on every "init"
+let finished = false;
+const showEdge = [true, true, true, true, true];
+const cam = { yaw: 0.6, pitch: 0.38, zoom: 1.0, spin: true, lastInteract: 0 };
+
+// ---------------------------------------------------------------------------
+//  Connection
+// ---------------------------------------------------------------------------
+let es = null, retryTimer = null;
+function connect() {
+  clearTimeout(retryTimer);
+  if (es) es.close();
+  es = new EventSource("/events");
+  es.addEventListener("init", e => onInit(JSON.parse(e.data)));
+  es.addEventListener("frame", e => onFrame(JSON.parse(e.data)));
+  es.addEventListener("status", e => setStatus(JSON.parse(e.data).text));
+  es.addEventListener("done", () => {
+    finished = true; setStatus("finished");
+    es.close(); retryTimer = setTimeout(connect, CONTROLLER ? 1000 : 5000);   // pick up the next run
+  });
+  es.onerror = () => { if (!finished) setStatus("waiting for a run"); };
+}
+
+function setStatus(text) {
+  const el = document.getElementById("status");
+  el.textContent = text;
+  el.className = "pill " + (["running", "finished", "stopped", "failed"].includes(text) ? text : "waiting");
+}
+
+// ---------------------------------------------------------------------------
+//  init: build the run's state from the network layout and history
+// ---------------------------------------------------------------------------
+function onInit(d) {
+  if (S && S.runId === d.run_id) {                    // reconnect to the same run: keep what we have
+    setStatus(d.status);
+    if (d.status === "finished") { finished = true; es.close(); retryTimer = setTimeout(connect, 5000); }
+    return;
+  }
+  finished = d.status === "finished";
+  setStatus(d.status);
+  const nNodes = d.node_kind.length;
+  const nPF = d.n_pkj * d.n_pf_shown;
+  S = {
+    runId: d.run_id, d,
+    totalMs: d.n_trials * d.trial_ms,
+    off: { pf: 0, pkj: nPF, dcn: nPF + d.n_pkj, io: nPF + d.n_pkj + d.n_dcn },   // node index offsets
+    kind: Uint8Array.from(d.node_kind),
+    pos: Float32Array.from(d.node_pos),
+    proj: new Float32Array(nNodes * 3),              // screen x, y, scale per node
+    bright: new Float32Array(nNodes),                // 0..1 glow per node
+    edges: [[], [], [], [], []],                     // per edge kind: flat [src, dst, ...]
+    cfEdges: Array.from({ length: d.n_io }, () => []),   // per IO cell: its IO->PKJ edge indices
+    pfw: new Float32Array(nPF).fill(0.5),            // current weight of each drawn PF synapse
+    raster: { io: [], dcn: [], pkj: [] },            // flat [t, cell, ...] for the last RASTER_MS
+    trace: { t: [], v: [] },                         // IO voltage samples for the last TRACE_MS
+    hist: { t: [], n: [], io: [], pkj: [], dcn: [], w: [], wt: [] },
+    rates: { t: [], cf: [], pkj: [], dcn: [] },
+    lastT: 0, lastHistT: -1, wall: 0,
+  };
+  for (let e = 0; e < d.edge_kind.length; e++) {
+    const k = d.edge_kind[e];
+    S.edges[k].push(d.edge_src[e], d.edge_dst[e]);
+    if (k === 1) S.cfEdges[d.edge_src[e] - S.off.io].push(S.edges[1].length / 2 - 1);
+  }
+  // centre the layout on the middle of its bounding box, and pick a camera distance that fits it
+  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < nNodes; i++) for (let a = 0; a < 3; a++) {
+    lo[a] = Math.min(lo[a], S.pos[3 * i + a]); hi[a] = Math.max(hi[a], S.pos[3 * i + a]);
+  }
+  const c = [0, 1, 2].map(a => (lo[a] + hi[a]) / 2);
+  let r = 0;
+  for (let i = 0; i < nNodes; i++) {
+    for (let a = 0; a < 3; a++) S.pos[3 * i + a] -= c[a];
+    r = Math.max(r, Math.hypot(S.pos[3 * i], S.pos[3 * i + 1], S.pos[3 * i + 2]));
+  }
+  S.radius = r;
+  // "fully lit" = firing at about the usual rate: PF 20 Hz, PKJ 60 Hz, DCN 15 Hz; IO lights on any CF
+  NORM = [d.frame_ms * 0.020, d.frame_ms * 0.060, d.frame_ms * 0.015, 1].map(v => Math.max(0.5, v));
+  DIM_COLOR = KIND_COLOR.map(c => mix(c, COLORS.bg, 0.65));
+
+  const h = d.header || {};
+  document.getElementById("cfg").textContent = Object.entries(h).map(([k, v]) => `${k}: ${v}`).join("   ·   ");
+  document.getElementById("iov-note").textContent = `cells ${d.trace_cells.join(", ")}`;
+  for (const f of d.history) addHistory(f);
+  dirty.raster = dirty.trace = dirty.charts = true;
+}
+
+// ---------------------------------------------------------------------------
+//  frame: 50 ms of activity
+// ---------------------------------------------------------------------------
+function addHistory(f) {
+  if (f.t <= S.lastHistT) return;                     // already have it (frames resent on connect)
+  S.lastHistT = f.t;
+  const H = S.hist;
+  H.t.push(f.t); H.n.push(f.n); H.io.push(f.io); H.pkj.push(f.pkj); H.dcn.push(f.dcn);
+  H.w.push(f.w); H.wt.push(f.wt);
+  // rates over the last RATE_WINDOW_MS of history: spikes / (cells x time)
+  let j = H.t.length - 1, n = 0, io = 0, pkj = 0, dcn = 0;
+  while (j >= 0 && H.t[j] > f.t - RATE_WINDOW_MS) { n += H.n[j]; io += H.io[j]; pkj += H.pkj[j]; dcn += H.dcn[j]; j--; }
+  const sec = n * S.d.dt_ms / 1000;
+  S.rates.t.push(f.t);
+  S.rates.cf.push(io / (S.d.n_io * sec));
+  S.rates.pkj.push(pkj / (S.d.n_pkj * sec));
+  S.rates.dcn.push(dcn / (S.d.n_dcn * sec));
+}
+
+let NORM = [1, 3, 1, 1];        // spikes per frame that count as "fully lit", per node kind (PF, PKJ, DCN, IO)
+function onFrame(f) {
+  if (!S) return;
+  const d = S.d, dt = d.dt_ms;
+  addHistory(f);
+  S.lastT = Math.max(S.lastT, f.t);
+  S.wall = f.wall;
+
+  // spikes -> raster store and node glow
+  const counts = new Float32Array(S.kind.length);
+  const add = (flat, store, off) => {
+    for (let i = 0; i < flat.length; i += 2) {
+      const t = f.t0 + (flat[i] + 1) * dt, cell = flat[i + 1];
+      if (store) store.push(t, cell);
+      counts[off + cell] += 1;
+    }
+  };
+  add(f.sp_io, S.raster.io, S.off.io);
+  add(f.sp_dcn, S.raster.dcn, S.off.dcn);
+  add(f.sp_pkj, S.raster.pkj, S.off.pkj);
+  add(f.sp_pf, null, S.off.pf);
+  for (let i = 0; i < counts.length; i++) {
+    if (counts[i]) S.bright[i] = Math.max(S.bright[i], Math.min(1, counts[i] / NORM[S.kind[i]]));
+  }
+  for (const k of ["io", "dcn", "pkj"]) prune(S.raster[k], S.lastT - RASTER_MS);
+
+  // IO voltage traces
+  const nc = d.trace_cells.length;
+  for (let s = 0; s < f.n; s++) {
+    S.trace.t.push(f.t0 + (s + 1) * dt);
+    S.trace.v.push(f.iov.slice(s * nc, (s + 1) * nc));
+  }
+  let cut = 0;
+  while (cut < S.trace.t.length && S.trace.t[cut] < S.lastT - TRACE_MS) cut++;
+  if (cut) { S.trace.t.splice(0, cut); S.trace.v.splice(0, cut); }
+
+  S.pfw.set(f.pfw);
+  updateHeader(f);
+  dirty.raster = dirty.trace = dirty.charts = true;
+}
+
+function prune(flat, tMin) {
+  let i = 0;
+  while (i < flat.length && flat[i] < tMin) i += 2;
+  if (i) flat.splice(0, i);
+}
+
+function fmtTime(s) {
+  if (!isFinite(s)) return "–";
+  if (s < 60) return s.toFixed(0) + " s";
+  if (s < 3600) return Math.floor(s / 60) + " min " + String(Math.floor(s % 60)).padStart(2, "0") + " s";
+  return Math.floor(s / 3600) + " h " + String(Math.floor((s % 3600) / 60)).padStart(2, "0") + " min";
+}
+
+function updateHeader(f) {
+  const d = S.d, R = S.rates, last = R.cf.length - 1;
+  const speed = f.wall > 0 ? (f.t / 1000) / f.wall : NaN;
+  document.getElementById("s-trial").textContent = `${f.trial + 1} / ${d.n_trials}`;
+  document.getElementById("s-time").textContent = `${(f.t / 1000).toFixed(1)} / ${(S.totalMs / 1000).toFixed(0)} s`;
+  document.getElementById("s-speed").textContent = isFinite(speed) ? `${speed.toFixed(2)}× real time` : "–";
+  document.getElementById("s-eta").textContent = fmtTime((S.totalMs - f.t) / 1000 / speed);
+  document.getElementById("s-cf").textContent = `${R.cf[last].toFixed(2)} Hz`;
+  document.getElementById("s-w").textContent = f.w.toFixed(4);
+  document.getElementById("cf-note").textContent = `now ${R.cf[last].toFixed(2)} Hz`;
+  document.getElementById("rate-note").textContent = `PKJ ${R.pkj[last].toFixed(1)} · DCN ${R.dcn[last].toFixed(1)} Hz`;
+  document.getElementById("w-note").textContent = `now ${f.w.toFixed(4)}`;
+}
+
+// ---------------------------------------------------------------------------
+//  Canvas helpers
+// ---------------------------------------------------------------------------
+const dirty = { raster: false, trace: false, charts: false };
+function fit(canvas) {                     // match the canvas buffer to its on-screen size
+  const dpr = window.devicePixelRatio || 1;
+  const w = Math.max(1, Math.round(canvas.clientWidth * dpr)), h = Math.max(1, Math.round(canvas.clientHeight * dpr));
+  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; return true; }
+  return false;
+}
+function mix(hexA, hexB, t) {              // blend two #rrggbb colours; returns #rrggbb
+  const a = parseInt(hexA.slice(1), 16), b = parseInt(hexB.slice(1), 16);
+  const ch = s => Math.round(((a >> s) & 255) * (1 - t) + ((b >> s) & 255) * t);
+  return "#" + [16, 8, 0].map(s => ch(s).toString(16).padStart(2, "0")).join("");
+}
+function weightColor(w) {                  // weight 0..1 -> dark blue, teal, yellow
+  w = Math.min(1, Math.max(0, w));
+  return w < 0.5 ? mix("#22344d", "#2a9d8f", w / 0.5) : mix("#2a9d8f", "#ffd84a", (w - 0.5) / 0.5);
+}
+
+// ---------------------------------------------------------------------------
+//  3D network
+// ---------------------------------------------------------------------------
+const net = document.getElementById("net");
+function project() {
+  const W = net.width, H = net.height, P = S.proj, X = S.pos;
+  const cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+  const D = S.radius * 3.2, f = Math.min(W, H) * 1.3 * cam.zoom;
+  for (let i = 0; i < S.kind.length; i++) {
+    const x = X[3 * i], y = X[3 * i + 1], z = X[3 * i + 2];
+    const x1 = x * cy - y * sy, y1 = x * sy + y * cy;          // turn around the vertical axis
+    const y2 = y1 * cp - z * sp, z2 = y1 * sp + z * cp;          // tilt toward the viewer
+    const s = f / (D + y2);
+    P[3 * i] = W / 2 + x1 * s; P[3 * i + 1] = H / 2 - z2 * s; P[3 * i + 2] = s / (f / D);
+  }
+}
+
+function drawEdges(ctx, flat, color, alpha, width) {
+  const P = S.proj;
+  ctx.beginPath();
+  for (let e = 0; e < flat.length; e += 2) {
+    const a = flat[e], b = flat[e + 1];
+    ctx.moveTo(P[3 * a], P[3 * a + 1]); ctx.lineTo(P[3 * b], P[3 * b + 1]);
+  }
+  ctx.strokeStyle = color; ctx.globalAlpha = alpha; ctx.lineWidth = width; ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function drawNet(dtWall) {
+  fit(net);
+  const ctx = net.getContext("2d"), W = net.width, H = net.height, dpr = window.devicePixelRatio || 1;
+  ctx.fillStyle = COLORS.bg; ctx.fillRect(0, 0, W, H);
+  if (!S) {
+    ctx.fillStyle = COLORS.text; ctx.font = `${14 * dpr}px system-ui`; ctx.textAlign = "center";
+    ctx.fillText(CONTROLLER ? "set the options on the left and press Run" : "waiting for a run… start one with  python3 run.py",
+                 W / 2, H / 2);
+    return;
+  }
+  if (cam.spin && performance.now() - cam.lastInteract > 2500) cam.yaw += dtWall * 0.12;
+  project();
+  const P = S.proj;
+
+  // edges
+  if (showEdge[0]) {                                         // PF -> PKJ, binned by weight
+    const bins = Array.from({ length: 8 }, () => []);
+    const E = S.edges[0];
+    for (let e = 0; e < E.length; e += 2) bins[Math.min(7, Math.floor(S.pfw[e / 2] * 8))].push(E[e], E[e + 1]);
+    bins.forEach((b, i) => b.length && drawEdges(ctx, b, weightColor((i + 0.5) / 8), 0.45, 1 * dpr));
+  }
+  if (showEdge[2]) drawEdges(ctx, S.edges[2], COLORS.pkj, 0.07, 1 * dpr);
+  if (showEdge[3]) drawEdges(ctx, S.edges[3], COLORS.dcn, 0.14, 1 * dpr);
+  if (showEdge[1]) {
+    drawEdges(ctx, S.edges[1], COLORS.io, 0.06, 1 * dpr);
+    for (let c = 0; c < S.d.n_io; c++) {                      // light up the climbing fibres that just fired
+      const b = S.bright[S.off.io + c];
+      if (b < 0.05) continue;
+      const flat = [];
+      for (const e of S.cfEdges[c]) flat.push(S.edges[1][2 * e], S.edges[1][2 * e + 1]);
+      drawEdges(ctx, flat, "#ff8a8a", 0.9 * b, 1.8 * dpr);
+    }
+  }
+  if (showEdge[4]) drawEdges(ctx, S.edges[4], COLORS.gap, 0.7, 1.6 * dpr);
+
+  // nodes: dim base colour, brightening (and glowing) with recent activity
+  const RADIUS = [1.1, 2.0, 3.0, 4.6];
+  for (let i = 0; i < S.kind.length; i++) {
+    const k = S.kind[i], b = S.bright[i], r = RADIUS[k] * P[3 * i + 2] * dpr * cam.zoom;
+    const x = P[3 * i], y = P[3 * i + 1];
+    if (b > 0.15 && k > 0) {
+      ctx.globalAlpha = 0.28 * b; ctx.fillStyle = KIND_COLOR[k];
+      ctx.beginPath(); ctx.arc(x, y, r * 3.2, 0, 6.2832); ctx.fill(); ctx.globalAlpha = 1;
+    }
+    ctx.fillStyle = b > 0.9 ? mix(KIND_COLOR[k], "#ffffff", (b - 0.9) * 4)   // very active: towards white
+                            : mix(DIM_COLOR[k], KIND_COLOR[k], b / 0.9);       // otherwise: dim -> full colour
+    ctx.beginPath(); ctx.arc(x, y, Math.max(0.6 * dpr, r), 0, 6.2832); ctx.fill();
+  }
+
+  // glow fades: fast for busy cells, slower for the olive so each CF event is visible
+  const fast = Math.exp(-dtWall / 0.25), slow = Math.exp(-dtWall / 0.7);
+  for (let i = 0; i < S.bright.length; i++) S.bright[i] *= S.kind[i] === 3 ? slow : fast;
+
+  // layer labels at the left of each layer
+  ctx.font = `${12 * dpr}px system-ui`; ctx.textAlign = "left";
+  for (const [k, name, off, n] of [[0, "PF", S.off.pf, S.off.pkj], [1, "PKJ", S.off.pkj, S.d.n_pkj],
+                                   [2, "DCN", S.off.dcn, S.d.n_dcn], [3, "IO", S.off.io, S.d.n_io]]) {
+    let minX = Infinity, sumY = 0;
+    for (let i = off; i < off + n; i++) { minX = Math.min(minX, P[3 * i]); sumY += P[3 * i + 1]; }
+    ctx.fillStyle = KIND_COLOR[k]; ctx.fillText(name, Math.max(4 * dpr, minX - 40 * dpr), sumY / n);
+  }
+}
+
+// mouse: drag to rotate, wheel to zoom, double-click to reset
+let drag = null;
+net.addEventListener("pointerdown", e => { drag = { x: e.clientX, y: e.clientY }; net.setPointerCapture(e.pointerId); });
+net.addEventListener("pointermove", e => {
+  if (!drag) return;
+  cam.yaw += (e.clientX - drag.x) * 0.008;
+  cam.pitch = Math.min(1.45, Math.max(-0.3, cam.pitch + (e.clientY - drag.y) * 0.006));
+  drag = { x: e.clientX, y: e.clientY }; cam.lastInteract = performance.now();
+});
+net.addEventListener("pointerup", () => { drag = null; });
+net.addEventListener("wheel", e => {
+  e.preventDefault();
+  cam.zoom = Math.min(4, Math.max(0.4, cam.zoom * Math.exp(-e.deltaY * 0.0012)));
+  cam.lastInteract = performance.now();
+}, { passive: false });
+net.addEventListener("dblclick", () => { cam.yaw = 0.6; cam.pitch = 0.38; cam.zoom = 1; });
+document.querySelectorAll("[data-edge]").forEach(cb =>
+  cb.addEventListener("change", () => { showEdge[+cb.dataset.edge] = cb.checked; }));
+document.getElementById("spin").addEventListener("change", e => { cam.spin = e.target.checked; });
+
+// ---------------------------------------------------------------------------
+//  Raster (drawn pixel by pixel: tens of thousands of spikes)
+// ---------------------------------------------------------------------------
+function drawRaster() {
+  const cv = document.getElementById("raster"); fit(cv);
+  const ctx = cv.getContext("2d"), W = cv.width, H = cv.height, dpr = window.devicePixelRatio || 1;
+  ctx.fillStyle = COLORS.bg; ctx.fillRect(0, 0, W, H);
+  if (!S) return;
+  const labelW = 38 * dpr, plotW = W - labelW;
+  const bands = [["IO", S.raster.io, S.d.n_io, COLORS.io, 0.18], ["DCN", S.raster.dcn, S.d.n_dcn, COLORS.dcn, 0.24],
+                 ["PKJ", S.raster.pkj, S.d.n_pkj, COLORS.pkj, 0.58]];
+  const img = ctx.getImageData(0, 0, W, H), px = img.data;
+  const tL = S.lastT - RASTER_MS;
+  let y0 = 0;
+  const layout = [];
+  for (const [name, flat, n, color, frac] of bands) {
+    const bandH = H * frac, rowH = bandH / n, c = parseInt(color.slice(1), 16);
+    const rr = (c >> 16) & 255, gg = (c >> 8) & 255, bb = c & 255;
+    const dotW = Math.max(1, Math.round(dpr * (name === "IO" ? 3 : 1)));
+    for (let i = 0; i < flat.length; i += 2) {
+      const x = Math.floor(labelW + (flat[i] - tL) / RASTER_MS * plotW);
+      const ya = Math.floor(y0 + flat[i + 1] * rowH), yb = Math.max(ya + 1, Math.floor(y0 + (flat[i + 1] + 1) * rowH));
+      for (let y = ya; y < yb && y < H; y++) for (let dx = 0; dx < dotW && x + dx < W; dx++) {
+        const p = 4 * (y * W + x + dx); px[p] = rr; px[p + 1] = gg; px[p + 2] = bb; px[p + 3] = 255;
+      }
+    }
+    layout.push([name, y0, bandH, color]);
+    y0 += bandH;
+  }
+  ctx.putImageData(img, 0, 0);
+  ctx.font = `${11 * dpr}px system-ui`; ctx.textAlign = "left";
+  for (const [name, y, h, color] of layout) {
+    ctx.fillStyle = color; ctx.fillText(name, 4 * dpr, y + h / 2 + 4 * dpr);
+    ctx.fillStyle = COLORS.grid; ctx.fillRect(labelW, y + h - 1, plotW, 1);
+  }
+  // trial boundaries inside the window
+  ctx.fillStyle = "#ffffff55";
+  const T = S.d.trial_ms;
+  for (let tb = Math.ceil(tL / T) * T; tb <= S.lastT; tb += T) {
+    if (tb <= 0) continue;
+    const x = labelW + (tb - tL) / RASTER_MS * plotW; ctx.fillRect(x, 0, 1, H);
+    ctx.fillText(`trial ${Math.round(tb / T) + 1}`, x + 3 * dpr, 11 * dpr);
+  }
+}
+
+// ---------------------------------------------------------------------------
+//  IO voltage traces
+// ---------------------------------------------------------------------------
+function drawTraces() {
+  const cv = document.getElementById("iov"); fit(cv);
+  const ctx = cv.getContext("2d"), W = cv.width, H = cv.height, dpr = window.devicePixelRatio || 1;
+  ctx.fillStyle = COLORS.bg; ctx.fillRect(0, 0, W, H);
+  if (!S || !S.trace.t.length) return;
+  const T = S.trace.t, V = S.trace.v, nc = S.d.trace_cells.length;
+  let lo = -80, hi = -20;
+  for (const row of V) for (const v of row) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+  const pad = 36 * dpr, plotW = W - pad, top = 6 * dpr, plotH = H - top - 14 * dpr;
+  const xOf = t => pad + (t - (S.lastT - TRACE_MS)) / TRACE_MS * plotW;
+  const yOf = v => top + (hi - v) / (hi - lo) * plotH;
+  axisY(ctx, lo, hi, yOf, pad, W, dpr, "");
+  ctx.setLineDash([4 * dpr, 4 * dpr]); ctx.strokeStyle = "#ffffff66"; ctx.lineWidth = 1;
+  const yt = yOf(S.d.v_spike_mv); ctx.beginPath(); ctx.moveTo(pad, yt); ctx.lineTo(W, yt); ctx.stroke();
+  ctx.setLineDash([]);
+  for (let c = 0; c < nc; c++) {
+    ctx.beginPath();
+    for (let i = 0; i < T.length; i++) (i ? ctx.lineTo : ctx.moveTo).call(ctx, xOf(T[i]), yOf(V[i][c]));
+    ctx.strokeStyle = TRACE_COLORS[c % TRACE_COLORS.length]; ctx.lineWidth = 1.2 * dpr; ctx.stroke();
+  }
+}
+
+// ---------------------------------------------------------------------------
+//  Run-long charts
+// ---------------------------------------------------------------------------
+function niceStep(span, n) {
+  const raw = span / n, p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / p;
+  return p * (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10);
+}
+function axisY(ctx, lo, hi, yOf, pad, W, dpr, unit) {
+  const step = niceStep(hi - lo, 4);
+  ctx.font = `${10 * dpr}px system-ui`; ctx.textAlign = "right";
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) {
+    const y = yOf(v);
+    ctx.fillStyle = COLORS.grid; ctx.fillRect(pad, Math.round(y), W - pad, 1);
+    ctx.fillStyle = COLORS.text; ctx.fillText(+v.toFixed(4) + (unit || ""), pad - 4 * dpr, y + 3 * dpr);
+  }
+}
+
+function drawChart(id, series, opts) {
+  const cv = document.getElementById(id); fit(cv);
+  const ctx = cv.getContext("2d"), W = cv.width, H = cv.height, dpr = window.devicePixelRatio || 1;
+  ctx.fillStyle = COLORS.bg; ctx.fillRect(0, 0, W, H);
+  if (!S) return;
+  const xMax = S.totalMs / 1000;
+  let lo = opts.lo ?? Infinity, hi = opts.hi ?? -Infinity;
+  if (opts.lo === undefined || opts.hi === undefined) {
+    for (const s of series) for (const v of s.y) if (isFinite(v)) {
+      if (opts.lo === undefined) lo = Math.min(lo, v);
+      if (opts.hi === undefined) hi = Math.max(hi, v);
+    }
+    if (opts.ref !== undefined) { lo = Math.min(lo, opts.ref); hi = Math.max(hi, opts.ref); }
+    if (!isFinite(lo)) { lo = 0; hi = 1; }
+    const span = Math.max(hi - lo, opts.minSpan || 1e-3); lo -= span * 0.08; hi += span * 0.08;
+    if (opts.floor !== undefined) lo = Math.max(lo, opts.floor);
+  }
+  const pad = 40 * dpr, top = 6 * dpr, bottom = 16 * dpr, plotW = W - pad - 6 * dpr, plotH = H - top - bottom;
+  const xOf = t => pad + (t / 1000) / xMax * plotW, yOf = v => top + (hi - v) / (hi - lo) * plotH;
+  axisY(ctx, lo, hi, yOf, pad, W, dpr);
+  // x axis: seconds, plus faint trial boundaries if there aren't too many
+  ctx.textAlign = "center"; ctx.fillStyle = COLORS.text;
+  const xs = niceStep(xMax, 6);
+  for (let x = 0; x <= xMax + 1e-9; x += xs) ctx.fillText(`${+x.toFixed(2)} s`, xOf(x * 1000), H - 3 * dpr);
+  if (S.d.n_trials <= 120) {
+    ctx.fillStyle = "#ffffff12";
+    for (let k = 1; k < S.d.n_trials; k++) ctx.fillRect(Math.round(xOf(k * S.d.trial_ms)), top, 1, plotH);
+  }
+  if (opts.ref !== undefined) {
+    ctx.setLineDash([5 * dpr, 4 * dpr]); ctx.strokeStyle = "#7ee787"; ctx.lineWidth = 1 * dpr;
+    ctx.beginPath(); ctx.moveTo(pad, yOf(opts.ref)); ctx.lineTo(pad + plotW, yOf(opts.ref)); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = "#7ee787"; ctx.textAlign = "right";
+    ctx.fillText(opts.refLabel, pad + plotW, yOf(opts.ref) - 4 * dpr);
+  }
+  for (const s of series) {
+    const n = s.x.length, stride = Math.max(1, Math.floor(n / 1500));
+    ctx.beginPath();
+    let started = false;
+    for (let i = 0; i < n; i += stride) {
+      const v = s.y[i]; if (!isFinite(v)) continue;
+      if (started) ctx.lineTo(xOf(s.x[i]), yOf(v)); else { ctx.moveTo(xOf(s.x[i]), yOf(v)); started = true; }
+    }
+    if (n) ctx.lineTo(xOf(s.x[n - 1]), yOf(s.y[n - 1]));
+    ctx.strokeStyle = s.color; ctx.globalAlpha = s.alpha ?? 1; ctx.lineWidth = (s.width ?? 1.4) * dpr; ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawCharts() {
+  if (!S) { ["c-cf", "c-rate", "c-w"].forEach(id => drawChart(id, [], {})); return; }
+  const R = S.rates, H = S.hist, d = S.d;
+  const predicted = d.predicted_hz;
+  drawChart("c-cf", [{ x: R.t, y: R.cf, color: COLORS.io }],
+            { floor: 0, minSpan: 0.5, ref: predicted ?? undefined, refLabel: `predicted ${predicted} Hz` });
+  drawChart("c-rate", [{ x: R.t, y: R.pkj, color: COLORS.pkj }, { x: R.t, y: R.dcn, color: COLORS.dcn }],
+            { floor: 0, minSpan: 5 });
+  const series = [];
+  if (H.wt.length) for (let c = 0; c < d.n_io; c++) series.push({ x: H.t, y: H.wt.map(r => r[c]), color: "#2a9d8f", alpha: 0.18, width: 1 });
+  series.push({ x: H.t, y: H.w, color: "#ffd84a", width: 2 });
+  drawChart("c-w", series, { minSpan: 0.02 });
+}
+
+// ---------------------------------------------------------------------------
+//  Controller: the settings form, Run / Stop and the console. Only shown when the
+//  page is served by launcher.py (which answers /api/settings); a run's own live
+//  view (python3 run.py) has no controls.
+// ---------------------------------------------------------------------------
+let CONTROLLER = false, TOKEN = "", logNext = 0, runState = "ready";
+const FIELDS = {};                                    // setting name -> {it, input, row}
+const STORE_KEY = "io_eq_settings";                   // your last values, remembered in this browser
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+function loadSaved() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || "{}"); } catch { return {}; } }
+function saveForm() {
+  const out = {};
+  for (const name in FIELDS) { const r = readField(name); if (r.ok) out[name] = r.value; }
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(out)); } catch { /* private window: not remembered */ }
+}
+function message(text, isError) {
+  const m = document.getElementById("side-msg");
+  m.textContent = text; m.className = isError ? "err" : "";
+}
+
+async function initController() {
+  let res;
+  try { res = await fetch("/api/settings"); } catch { return; }
+  if (!res.ok) return;
+  CONTROLLER = true;
+  // The token comes from the link launcher.py printed. Keep it for this tab and tidy the address bar.
+  const fromUrl = new URLSearchParams(location.search).get("token");
+  try {
+    if (fromUrl) sessionStorage.setItem("io_eq_token", fromUrl);
+    TOKEN = sessionStorage.getItem("io_eq_token") || "";
+  } catch { TOKEN = fromUrl || ""; }
+  if (fromUrl) history.replaceState(null, "", location.pathname);
+
+  buildForm((await res.json()).sections);
+  document.getElementById("side").hidden = false;
+  if (!TOKEN) message("To start runs, open the page with the link launcher.py printed (it ends in ?token=…).", true);
+
+  document.getElementById("run-btn").addEventListener("click", startRun);
+  document.getElementById("stop-btn").addEventListener("click", stopRun);
+  document.getElementById("reset-btn").addEventListener("click", () => {
+    for (const name in FIELDS) { writeField(name, FIELDS[name].it.value); markField(name); }
+    saveForm();
+  });
+  document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+  document.getElementById("filter").addEventListener("input", applyFilter);
+  pollLog();
+}
+
+function buildForm(sections) {
+  const saved = loadSaved(), form = document.getElementById("form");
+  form.textContent = "";
+  for (const sec of sections) {
+    const det = el("details", "sec");
+    det.open = !sec.advanced;
+    det.appendChild(el("summary", null, sec.title));
+    for (const it of sec.items) {
+      if (it.note !== undefined) { det.appendChild(el("div", "note", it.note)); continue; }
+      const row = el("div", "row"), label = el("label", "nm", it.name);
+      const input = document.createElement("input");
+      input.id = "f-" + it.name; label.htmlFor = input.id;
+      let control = input;
+      if (it.kind === "toggle") {
+        input.type = "checkbox";
+        control = el("span", "switch"); control.append(input, el("span"));
+      } else if (it.kind === "int" || it.kind === "float") {
+        input.type = "number"; input.step = "any";
+      } else {
+        input.type = "text";
+        if (it.kind === "optional") input.placeholder = "none";
+      }
+      row.append(label, control);
+      if (it.help) row.appendChild(el("div", "hp", it.help));
+      det.appendChild(row);
+      FIELDS[it.name] = { it, input, row };
+      writeField(it.name, it.name in saved ? saved[it.name] : it.value);
+      markField(it.name);
+      input.addEventListener(it.kind === "toggle" ? "change" : "input", () => { markField(it.name); saveForm(); });
+    }
+    form.appendChild(det);
+  }
+}
+
+function writeField(name, v) {
+  const { it, input } = FIELDS[name];
+  if (it.kind === "toggle") input.checked = !!v;
+  else input.value = v === null || v === undefined ? "" : String(v);
+}
+function readField(name) {                         // -> {ok, value}
+  const { it, input } = FIELDS[name], s = input.value.trim();
+  switch (it.kind) {
+    case "toggle":   return { ok: true, value: input.checked ? 1 : 0 };
+    case "int":      return { ok: /^-?\d+$/.test(s), value: parseInt(s, 10) };
+    case "float":    return { ok: s !== "" && isFinite(Number(s)), value: Number(s) };
+    case "optional": return s === "" ? { ok: true, value: null } : { ok: isFinite(Number(s)), value: Number(s) };
+    default:         return { ok: /^[A-Za-z0-9_.,/ +-]*$/.test(s), value: s };
+  }
+}
+function markField(name) {
+  const { it, row } = FIELDS[name], r = readField(name);
+  const def = it.kind === "toggle" ? (it.value ? 1 : 0) : it.value;
+  row.classList.toggle("bad", !r.ok);
+  row.classList.toggle("changed", r.ok && r.value !== def);
+}
+
+function applyFilter() {
+  const q = document.getElementById("filter").value.trim().toLowerCase();
+  document.querySelectorAll("#form details.sec").forEach(det => {
+    let any = false;
+    det.querySelectorAll(".row").forEach(row => {
+      const hit = !q || row.textContent.toLowerCase().includes(q);
+      row.style.display = hit ? "" : "none"; any = any || hit;
+    });
+    det.querySelectorAll(".note").forEach(n => { n.style.display = q ? "none" : ""; });
+    det.style.display = any ? "" : "none";
+    if (q) det.open = true;
+  });
+}
+
+function showTab(tab) {
+  document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+  document.getElementById("tab-settings").hidden = tab !== "settings";
+  document.getElementById("tab-console").hidden = tab !== "console";
+}
+
+async function post(path, body) {
+  const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json", "X-Token": TOKEN },
+                                  body: JSON.stringify(body || {}) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+async function startRun() {
+  const values = {}, bad = [];
+  for (const name in FIELDS) {
+    const r = readField(name);
+    if (r.ok) values[name] = r.value; else bad.push(name);
+  }
+  if (bad.length) { message("Fix these first: " + bad.join(", "), true); return; }
+  try {
+    const data = await post("/api/run", { values });
+    message("started: " + data.command);
+    finished = false;
+    connect();                                     // follow the new run's live view
+    pollLog(true);
+  } catch (err) { message(err.message, true); }
+}
+
+async function stopRun() {
+  try { await post("/api/stop"); message("stopping…"); } catch (err) { message(err.message, true); }
+}
+
+let pollTimer = null;
+async function pollLog(now) {
+  clearTimeout(pollTimer);
+  try {
+    const res = await fetch("/api/log?since=" + logNext), d = await res.json();
+    if (d.lines.length) {
+      const pre = document.getElementById("console"), pane = document.getElementById("tab-console");
+      const atBottom = pane.scrollTop + pane.clientHeight >= pane.scrollHeight - 30;
+      pre.textContent = (pre.textContent + d.lines.join("\n") + "\n").split("\n").slice(-3000).join("\n");
+      if (atBottom) pane.scrollTop = pane.scrollHeight;
+    }
+    logNext = d.next;
+    if (d.state !== runState) {
+      if (d.state === "failed") { showTab("console"); message("The run stopped with an error; see the console.", true); }
+      else if (d.state === "finished") message("Finished. The results are at the end of the console.");
+      else if (d.state === "stopped") message("Stopped.");
+      runState = d.state;
+    }
+    document.getElementById("run-btn").disabled = d.state === "running" || !TOKEN;
+    document.getElementById("stop-btn").disabled = d.state !== "running" || !TOKEN;
+  } catch { /* launcher not reachable right now; try again */ }
+  pollTimer = setTimeout(pollLog, 1000);
+}
+
+// ---------------------------------------------------------------------------
+//  Animation loop: the network every frame, the rest when new data arrived
+// ---------------------------------------------------------------------------
+let lastNow = performance.now(), chartClock = 0;
+function loop(now) {
+  const dtWall = Math.min(0.1, (now - lastNow) / 1000); lastNow = now;
+  drawNet(dtWall);
+  if (dirty.raster) { drawRaster(); dirty.raster = false; }
+  if (dirty.trace) { drawTraces(); dirty.trace = false; }
+  chartClock += dtWall;
+  if (dirty.charts && chartClock > 0.4) { drawCharts(); dirty.charts = false; chartClock = 0; }
+  requestAnimationFrame(loop);
+}
+window.addEventListener("resize", () => { dirty.raster = dirty.trace = dirty.charts = true; });
+initController().finally(connect);
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
