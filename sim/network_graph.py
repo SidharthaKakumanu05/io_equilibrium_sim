@@ -1,31 +1,21 @@
-"""The wired network as an explicit graph: nodes with 3D positions, typed
-edges, and the adjacency matrix they induce.
+"""The network as a graph (nodes and edges), for drawing. Not used by run.py.
 
-Nothing here participates in the simulation. It exists so the connectivity that
-sim/simulate.py applies implicitly -- as array slices and index arrays -- can be
-read out as one object and drawn (sim/network_viz.py). Because it is built from
-the same Connectivity and gap-junction matrix the simulation runs on, the
-picture is a picture of the actual network, not a redrawing of the intent.
+build_network_graph() takes the same Connectivity and gap-junction matrix the
+simulation uses and turns them into:
 
-Node ordering is PF, then PKJ, then DCN, then IO, so the adjacency matrix comes
-out block-structured along the pathway and each block is a projection.
+  nodes  one per cell, in the order PF, PKJ, DCN, IO, each with a type,
+         a group (climbing fibre for PF/PKJ, own index for DCN/IO) and an
+         (x, y, z) position for drawing
+  edges  one per connection, with its type (see EDGE_KINDS) and strength
 
-Only a subsample of the parallel fibers is included (`n_pf_per_pkj_shown`): the
-full network has n_io * n_pkj_per_io * n_pf_per_pkj = 160,000 PF units at the
-default scale, which is neither drawable nor a readable adjacency matrix. Every
-other cell is present in full.
-
-`group` on a node is its climbing-fiber territory for PF and PKJ, and the cell's
-own index for DCN and IO. Nuclear and olivary cells get no territory because
-they have none: PKJ->DCN and DCN->IO both overlap, so a nuclear cell is driven by
-Purkinje cells from several climbing-fiber territories and inhibits several
-olivary cells in turn.
+sim/network_viz.py draws it. Only a few PFs per Purkinje cell are included
+(n_pf_per_pkj_shown, default 8); all 160,000 could not be drawn.
 """
 from dataclasses import dataclass, field
 
 import numpy as np
 
-# Edge kinds, with the sign of their effect on the postsynaptic cell.
+# The five kinds of connection. sign: +1 excitatory, -1 inhibitory, 0 electrical (no direction).
 EDGE_KINDS = {
     "pf_pkj":  {"sign": +1, "label": "PF -> PKJ (excitatory, plastic)"},
     "io_pkj":  {"sign": +1, "label": "IO -> PKJ (climbing fiber / teaching)"},
@@ -37,7 +27,8 @@ EDGE_KINDS = {
 
 @dataclass
 class NetworkGraph:
-    """Nodes are indexed 0..n_nodes-1 in PF, PKJ, DCN, IO order."""
+    """The graph. Nodes are numbered 0..n_nodes-1 in PF, PKJ, DCN, IO order;
+    each array below has one entry per node (N) or per edge (E)."""
     kind: np.ndarray            # (N,) cell-type string per node: "PF" | "PKJ" | "DCN" | "IO"
     group: np.ndarray           # (N,) climbing-fiber territory (PF/PKJ) or the cell's own index (DCN/IO)
     index: np.ndarray           # (N,) index within its cell type
@@ -57,23 +48,17 @@ class NetworkGraph:
         return len(self.edge_src)
 
     def node_ids(self, kind):
+        """Node numbers of every cell of one type, e.g. "IO"."""
         return np.flatnonzero(self.kind == kind)
 
     def adjacency_matrix(self, signed=True, kinds=None, normalize_per_kind=False):
-        """(N, N) matrix, A[i, j] = weight of the edge from node i to node j.
+        """(N, N) matrix with A[i, j] = strength of the connection from node i to node j.
 
-        `signed` multiplies each entry by its projection's sign, so excitation
-        is positive and inhibition negative; gap junctions are symmetric and
-        carry sign 0, so they are written as their raw conductance either way.
-        `kinds` restricts the matrix to a subset of projections.
-
-        `normalize_per_kind` divides each projection by its own largest
-        magnitude, putting every entry in [-1, 1]. The projections are in
-        genuinely different units -- a dimensionless synaptic weight, a
-        conductance in 1/ms, a conductance in mS/cm^2 -- so a single scale
-        across all of them is not a comparison of anything, and rendering it
-        that way simply hides whichever projection has the smallest numbers.
-        Use it whenever the matrix is being drawn to show structure.
+        signed:             make inhibitory entries negative
+        kinds:              only include these connection types (default: all)
+        normalize_per_kind: divide each connection type by its own maximum, so
+                            all of them show up on one colour scale (they are
+                            in different units)
         """
         a = np.zeros((self.n_nodes, self.n_nodes), dtype=float)
         selected = np.ones(self.n_edges, dtype=bool) if kinds is None else np.isin(self.edge_kind, list(kinds))
@@ -88,15 +73,12 @@ class NetworkGraph:
             value = w / scale.get(kind, 1.0) * (sign if (signed and sign != 0) else 1.0)
             a[src, dst] += value
             if sign == 0:
-                # Sign 0 marks an undirected projection -- a gap junction is one resistor, stored
-                # once per unordered pair in the edge list. Writing only [src, dst] would produce a
-                # triangular block and misrepresent coupling that conducts equally both ways.
+                # Gap junctions are stored once per pair; fill in both directions.
                 a[dst, src] += value
         return a
 
     def kind_blocks(self):
-        """[(kind, start, stop)] boundaries of each cell type in node order --
-        what the adjacency-matrix plot draws its block dividers from."""
+        """[(type, first node, last node + 1)] for each cell type, in order."""
         blocks, start = [], 0
         for k in ("PF", "PKJ", "DCN", "IO"):
             n = int((self.kind == k).sum())
@@ -106,6 +88,7 @@ class NetworkGraph:
         return blocks
 
     def summary(self):
+        """One-line count of nodes and edges by type."""
         counts = ", ".join(f"{int((self.kind == k).sum())} {k}" for k, _, _ in self.kind_blocks())
         per_kind = ", ".join(f"{int((self.edge_kind == k).sum())} {k}"
                              for k in EDGE_KINDS if (self.edge_kind == k).any())
@@ -113,25 +96,20 @@ class NetworkGraph:
 
 
 def _ring_positions(n, radius, z, phase=0.0):
+    """n points evenly spaced on a circle of `radius` at height z."""
     theta = phase + 2.0 * np.pi * np.arange(n) / max(n, 1)
     return np.stack([radius * np.cos(theta), radius * np.sin(theta), np.full(n, z)], axis=1), theta
 
 
 def build_network_graph(cfg, conn, gap_matrix=None, weights=None, n_pf_per_pkj_shown=8, seed=0):
-    """Assemble the graph from the same connection tables the simulation runs on.
+    """Build a NetworkGraph from a SimConfig and Connectivity.
 
-    `weights` is an optional (n_pkj, n_pf_per_pkj) array of live PF->PKJ weights;
-    without it every PF edge is drawn at cfg.w_init. `gap_matrix` is the
-    (n_io, n_io) coupling matrix from sim/io_coupling.py.
+    weights:    optional PF->PKJ weights to label edges with (default: w_init)
+    gap_matrix: optional gap-junction matrix, to include IO <-> IO edges
 
-    Layout is anatomical in spirit and has no effect on anything simulated --
-    nothing in the dynamics reads a position, and no connection depends on
-    distance. The olive sits at the bottom as a tight ring (it is one nucleus,
-    electrically coupled across the population), the nuclei above it, the
-    Purkinje layer above that, and the parallel fibers on top. Purkinje cells fan
-    out by climbing-fiber territory, so each olivary cell's eight targets sit
-    together; nuclear cells get their own ring, since they are shared across
-    territories rather than belonging to one.
+    Positions are for drawing only. Each cell type is a ring at its own height:
+    IO at the bottom, then DCN, then PKJ, then PFs on top. PKJ are ordered by
+    climbing fibre, so each olive cell's 8 PKJ sit together.
     """
     rng = np.random.default_rng(seed)
     n_io, n_dcn, n_pkj = conn.n_io, conn.n_dcn, conn.n_pkj
@@ -142,16 +120,17 @@ def build_network_graph(cfg, conn, gap_matrix=None, weights=None, n_pf_per_pkj_s
     def add(kind, group, index, pos):
         kinds.append(kind); groups.append(group); indices.append(index); positions.append(pos)
 
-    Z_IO, Z_DCN, Z_PKJ, Z_PF = 0.0, 3.0, 6.0, 8.2
-    R_IO, R_DCN, R_PKJ = 1.6, 5.0, 7.6
+    Z_IO, Z_DCN, Z_PKJ, Z_PF = 0.0, 3.0, 6.0, 8.2         # height of each layer
+    R_IO, R_DCN, R_PKJ = 1.6, 5.0, 7.6                    # radius of each ring
 
-    # Purkinje cells are laid out around a full circle, ordered by climbing fiber, so an
-    # olivary cell's territory is a contiguous arc.
+    # Angle of each PKJ around the ring.
     pkj_theta = 2.0 * np.pi * np.arange(n_pkj) / max(n_pkj, 1)
 
-    pf_node_of, pkj_node_of, dcn_node_of, io_node_of = {}, {}, {}, {}
+    pf_node_of, pkj_node_of, dcn_node_of, io_node_of = {}, {}, {}, {}   # cell index -> node number
 
-    for pkj in range(n_pkj):                                   # PF cloud above each Purkinje cell
+    # --- nodes ---
+
+    for pkj in range(n_pkj):                                   # a small cloud of PFs above each PKJ
         th = pkj_theta[pkj]
         for s_i in range(n_pf_shown):
             r = R_PKJ + 0.35 * rng.normal()
@@ -175,29 +154,30 @@ def build_network_graph(cfg, conn, gap_matrix=None, weights=None, n_pf_per_pkj_s
         io_node_of[i] = len(kinds)
         add("IO", i, i, io_pos[i])
 
+    # --- edges ---
     src, dst, ekind, eweight = [], [], [], []
 
     def connect(a, b, kind, w):
         src.append(a); dst.append(b); ekind.append(kind); eweight.append(float(w))
 
-    for pkj in range(n_pkj):                                   # PF -> PKJ (plastic; shown subsample)
+    for pkj in range(n_pkj):                                   # PF -> PKJ (only the PFs included above)
         for s_i in range(n_pf_shown):
             w = cfg.w_init if weights is None else weights[pkj, s_i]
             connect(pf_node_of[(pkj, s_i)], pkj_node_of[pkj], "pf_pkj", w)
 
-    for pkj, targets in enumerate(conn.pkj_to_dcn):            # PKJ -> DCN, from the table
+    for pkj, targets in enumerate(conn.pkj_to_dcn):            # PKJ -> DCN
         for d in targets:
             connect(pkj_node_of[pkj], dcn_node_of[d], "pkj_dcn", cfg.pkj_dcn_gain)
 
-    for d, targets in enumerate(conn.dcn_to_io):               # DCN -> IO, from the table
+    for d, targets in enumerate(conn.dcn_to_io):               # DCN -> IO
         for i in targets:
             connect(dcn_node_of[d], io_node_of[i], "dcn_io", cfg.dcn_io_gaba_gain)
 
-    for i, targets in enumerate(conn.io_to_pkj):               # IO -> PKJ, the climbing fiber
+    for i, targets in enumerate(conn.io_to_pkj):               # IO -> PKJ (climbing fibres)
         for pkj in targets:
             connect(io_node_of[i], pkj_node_of[pkj], "io_pkj", cfg.cf_pause_g)
 
-    if gap_matrix is not None:                                 # IO <-> IO, one edge per pair
+    if gap_matrix is not None:                                 # IO <-> IO gap junctions, one edge per pair
         gm = np.asarray(gap_matrix, dtype=float)
         for a in range(n_io):
             for b in range(a + 1, n_io):

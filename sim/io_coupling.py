@@ -1,93 +1,50 @@
-"""IO-IO gap-junction (electrical) coupling.
+"""Gap junctions between olive cells.
 
-The olive is the most densely electrically coupled nucleus in the mammalian
-brain: neighbouring IO neurons are joined by connexin-36 gap junctions inside
-the glomeruli, which is what lets their subthreshold oscillations phase-lock
-and what makes CF output arrive in synchronous ensembles rather than as
-independent single-cell events.
+Neighbouring olive cells are joined by gap junctions, direct electrical
+connections that let current flow from the higher-voltage cell to the lower one.
+That pulls their voltages together and tends to make them fire in sync.
 
-Model: a gap junction is an ohmic resistor between two somata, so the current
-into cell i is
+Each junction acts as a resistor between two cells. The current into cell i is
 
-    I_gap(i) = sum_j g_gap[i, j] * (V_j - V_i)
+    I_gap(i) = sum over j of  g_gap[i, j] * (V_j - V_i)
 
-with g_gap symmetric (a resistor conducts equally both ways) and zero on the
-diagonal. This is the same rule CbmSim applies to its own IO array --
-`vCoupleIO[i] += coupleRiRjRatioIO * (vIO[j] - vIO[i])` summed over each cell's
-partners in `MZone::updateIOOut`, with `connectIOtoIO` wiring every cell to
-every other -- so `all_to_all` here is the direct analogue of CbmSim's default,
-and `g_gap` plays the role of `coupleRiRjRatioIO`. Two differences, both
-deliberate:
+so everything about the coupling is in one matrix, g_gap: entry [i, j] is the
+conductance between cells i and j (0 if they aren't coupled). It is symmetric,
+since current flows equally both ways, and zero on the diagonal.
 
-  * CbmSim adds the coupling as a voltage increment in arbitrary units, on top
-    of a leaky-integrate-and-fire IO. Here it is a real conductance in mS/cm^2
-    entering the conductance-based cell's current balance, so it shunts as well
-    as pulls -- which is what a gap junction physically does.
-  * CbmSim computes the coupling term in `updateIOOut`, i.e. from the *previous*
-    timestep's voltages. Here it is evaluated inside the 0.1 ms sub-timestep,
-    at the same instant as every other current. The Ca2+ spike upstroke moves V
-    by tens of mV in a millisecond, so a 1 ms lag on the coupling term would
-    materially mis-state the current flowing during exactly the event the
-    coupling is supposed to synchronize.
+This file only BUILDS that matrix. The current itself is computed inside the
+olive cell's voltage update (sim/io_channels.py, IOPopulation.substep).
 
-The conductance splits exactly into a term for the cell's own voltage and a
-term for its neighbours',
-
-    I_gap(i) = (sum_j g_gap[i,j] * V_j)  -  (sum_j g_gap[i,j]) * V_i
-
-so it folds into the exponential-Euler update in sim/io_channels.py with no
-separate explicit term: the row sum joins g_tot, and g_gap @ V joins the
-numerator. That is why the cells have to be advanced as a population --
-sim/io_channels.py IOPopulation -- rather than one at a time.
+Also here: coupling_summary() and synchrony_index(). run.py calls neither.
 """
 import numpy as np
 
-TOPOLOGIES = ("all_to_all", "ring", "nearest_k", "small_world")
+TOPOLOGIES = ("all_to_all", "ring", "nearest_k", "small_world")   # the accepted values of `topology`
 
 
 def build_gap_junction_matrix(n_io, g_gap, topology="all_to_all", n_neighbors=2,
                               rewire_p=0.15, seed=0):
-    """Symmetric (n_io, n_io) coupling-conductance matrix, mS/cm^2, zero diagonal.
+    """Build the (n_io, n_io) gap-junction matrix, in mS/cm^2.
 
-    g_gap is the conductance of a *single* junction, so a cell's total coupling
-    conductance is g_gap times its number of partners: 2*g_gap on a ring,
-    2k*g_gap under nearest_k, (n-1)*g_gap all-to-all. That TOTAL is the
-    physiologically meaningful quantity, not g_gap -- compare it against
-    IOChannelParams.g_leak (0.06 mS/cm^2). Comparable to leak is the
-    physiological regime; far above it the cells are clamped into a single unit,
-    which is why all-to-all does not survive the scale-up to 40 cells (39
-    partners, ~12x leak) and the shipped topology is local instead.
+    g_gap is the conductance of ONE junction. A cell's total coupling is g_gap
+    times its number of partners, and that total is what matters. Compare it
+    with the cell's leak (0.06 mS/cm^2): the default is 4 x 0.0143 = 0.057.
 
-    Topologies:
-      all_to_all  every cell coupled to every other (CbmSim's connectIOtoIO).
-      ring        cells on a closed ring, each coupled to its 2 neighbours --
-                  local coupling, which is closer to the olive's anatomy and
-                  produces patchy/traveling synchrony rather than global lock-step.
-      nearest_k   ring generalized to the k nearest neighbours either side
-                  (n_neighbors = k, so each cell has 2k partners).
-      small_world Watts-Strogatz: start from nearest_k, then rewire a fraction
-                  `rewire_p` of the junctions to random partners. Degree and
-                  total conductance per cell are preserved on average, so this
-                  buys synchrony with topology rather than with conductance.
-
-    Why small_world exists: under every local topology, global synchrony is
-    limited by path length rather than by conductance. Measured on the shipped
-    40-cell olive at matched total conductance, directly coupled pairs reach
-    Vm r ~ +0.90 while pairs on opposite sides plateau near +0.39 -- the local
-    junctions are already close to saturation, so raising g_gap has almost
-    nothing left to give there. Shortening the paths does what raising the
-    conductance cannot: at n_io = 40 and k = 2 the graph diameters are 20 (ring),
-    10 (nearest_k), 6-8 (small_world at 15% rewiring, depending on `seed`) and
-    1 (all_to_all), and CF
-    synchrony follows that order rather than following g_gap. See the README's
-    topology table.
+    The cells are imagined sitting on a ring, numbered 0..n_io-1. Topologies:
+      all_to_all   every cell coupled to every other cell
+      ring         each cell coupled to its 2 immediate neighbours
+      nearest_k    each cell coupled to the n_neighbors nearest cells on each
+                   side (2 x n_neighbors partners). The default.
+      small_world  nearest_k, then a fraction rewire_p of junctions moved to
+                   random partners (seeded by `seed`), giving a few long-range
+                   shortcuts
     """
     n = int(n_io)
     if n < 1:
         raise ValueError(f"n_io must be >= 1, got {n}")
     g = np.zeros((n, n), dtype=float)
     if n < 2 or g_gap == 0.0:
-        return g                                              # a lone cell (or zero conductance) has nothing to couple to
+        return g                                              # coupling off: all zeros
 
     if topology == "all_to_all":
         g[:] = g_gap
@@ -96,26 +53,30 @@ def build_gap_junction_matrix(n_io, g_gap, topology="all_to_all", n_neighbors=2,
         k = 1 if topology == "ring" else int(n_neighbors)
         if k < 1:
             raise ValueError(f"n_neighbors must be >= 1, got {n_neighbors}")
-        k = min(k, n // 2)                                     # beyond n//2 the ring wraps onto itself: all_to_all
+        k = min(k, n // 2)                                     # can't have more neighbours per side than half the ring
+        # Couple each cell i to i+1, i+2, ..., i+k (wrapping around). Since the matrix is filled
+        # symmetrically, that also couples i to i-1 ... i-k.
         for offset in range(1, k + 1):
             idx = np.arange(n)
             partner = (idx + offset) % n
-            g[idx, partner] = g_gap                            # both assignments together keep the matrix symmetric,
-            g[partner, idx] = g_gap                            # and handle the offset == n/2 case writing the same pair twice
+            g[idx, partner] = g_gap                            # set both [i, j] and [j, i]
+            g[partner, idx] = g_gap
         np.fill_diagonal(g, 0.0)
     elif topology == "small_world":
         k = max(1, min(int(n_neighbors), n // 2))
         rng = np.random.default_rng(seed)
+        # Start from the nearest_k pairs, stored as (smaller index, larger index).
         edges = set()
         for offset in range(1, k + 1):
             for i in range(n):
                 a, b = i, (i + offset) % n
                 if a != b:
                     edges.add((min(a, b), max(a, b)))
+        # With probability rewire_p, move one end of each junction to a random cell
+        # (never onto itself, never duplicating an existing junction).
         for (a, b) in sorted(edges):
             if rng.random() >= rewire_p:
                 continue
-            # Move one end of this junction to a random cell, keeping the graph simple.
             for _ in range(50):
                 c = int(rng.integers(n))
                 new = (min(a, c), max(a, c))
@@ -123,7 +84,7 @@ def build_gap_junction_matrix(n_io, g_gap, topology="all_to_all", n_neighbors=2,
                     edges.discard((a, b))
                     edges.add(new)
                     break
-        for (a, b) in edges:
+        for (a, b) in edges:                                   # write the final pairs into the matrix
             g[a, b] = g_gap
             g[b, a] = g_gap
         np.fill_diagonal(g, 0.0)
@@ -133,7 +94,7 @@ def build_gap_junction_matrix(n_io, g_gap, topology="all_to_all", n_neighbors=2,
 
 
 def coupling_summary(g_gap_matrix, g_leak=None):
-    """Human-readable description of a coupling matrix, for run logs."""
+    """One-line text description of a gap-junction matrix. Not called by run.py."""
     g = np.asarray(g_gap_matrix, dtype=float)
     n = g.shape[0]
     n_edges = int((g > 0).sum() // 2)
@@ -148,25 +109,20 @@ def coupling_summary(g_gap_matrix, g_leak=None):
 
 
 def synchrony_index(spike_times_by_cell, t_start_ms, t_end_ms, bin_ms=20.0):
-    """Pairwise-correlation measure of how synchronized the CF output is.
+    """How synchronised the olive's CF events are. Not called by run.py.
 
-    Spike trains are binned, then the mean off-diagonal Pearson correlation
-    across cell pairs is returned. 0 = independent cells, 1 = identical trains.
-
-    This is a SPIKE measure, and at ~1 Hz firing it is a blunt one: most bins
-    are empty for every cell, so it moves far less than the coupling does. The
-    subthreshold Vm correlation in experiments/run_gap_sweep.py is the sensitive
-    read-out of what the junctions are doing; this is the downstream consequence
-    that actually matters to the cerebellum, so both are reported."""
+    Counts each cell's spikes in bins of bin_ms, then returns the average
+    correlation between every pair of cells: 0 = independent, 1 = identical.
+    Cells that never fire in the window are left out."""
     edges = np.arange(t_start_ms, t_end_ms + bin_ms, bin_ms)
     if len(edges) < 3:
         return float("nan")
     counts = np.array([np.histogram(np.asarray(s, dtype=float), bins=edges)[0]
                        for s in spike_times_by_cell], dtype=float)
-    active = counts.std(axis=1) > 0                            # a silent cell has undefined correlation with anything
+    active = counts.std(axis=1) > 0                            # drop cells with no variation (e.g. silent)
     counts = counts[active]
     if len(counts) < 2:
         return float("nan")
     c = np.corrcoef(counts)
-    off_diagonal = ~np.eye(len(c), dtype=bool)
+    off_diagonal = ~np.eye(len(c), dtype=bool)                 # exclude each cell's correlation with itself
     return float(c[off_diagonal].mean())

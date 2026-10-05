@@ -1,19 +1,20 @@
-"""Drawing a NetworkGraph: the wired network in 3D, and its connectivity matrix.
+"""Drawing the network graph from sim/network_graph.py. Not used by run.py.
 
-Both figures are snapshots of the graph sim/network_graph.py builds from the
-same Connectivity and gap-junction matrix the simulation runs on, so they show
-the network that actually ran rather than a redrawing of the intent.
+  plot_network_3d()           3D picture: the whole network, one climbing
+                              fibre's path around the loop, and the olive's
+                              gap junctions
+  plot_connectivity_matrix()  the connection matrix as a heat map
 """
 import numpy as np
 
-NODE_STYLE = {                          # colour, marker size, z-order for each cell type
+NODE_STYLE = {                          # how each cell type is drawn: colour, marker size, drawing order
     "PF":  {"color": "#b9c2cc", "size": 3,   "z": 1, "label": "PF (parallel fiber)"},
     "PKJ": {"color": "#2b6cb0", "size": 26,  "z": 3, "label": "PKJ (Purkinje)"},
     "DCN": {"color": "#dd8a1a", "size": 70,  "z": 4, "label": "DCN (deep nuclear)"},
     "IO":  {"color": "#c0392b", "size": 150, "z": 5, "label": "IO (inferior olive)"},
 }
 
-EDGE_STYLE = {                          # colour, width, alpha for each projection
+EDGE_STYLE = {                          # how each connection type is drawn: colour, line width, transparency
     "pf_pkj":  {"color": "#95a5a6", "lw": 0.25, "alpha": 0.30},
     "pkj_dcn": {"color": "#2b6cb0", "lw": 0.55, "alpha": 0.45},
     "dcn_io":  {"color": "#dd8a1a", "lw": 1.30, "alpha": 0.85},
@@ -23,6 +24,7 @@ EDGE_STYLE = {                          # colour, width, alpha for each projecti
 
 
 def _mpl():
+    """Import matplotlib set up to save files without a display."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -30,8 +32,8 @@ def _mpl():
 
 
 def _draw_edges(ax, graph, kinds, art3d):
-    """One Line3DCollection per projection -- thousands of individual plot()
-    calls would take longer to draw than the simulation takes to run."""
+    """Draw every edge of the given types, one batch per type (much faster than
+    one line at a time)."""
     for kind in kinds:
         sel = graph.edge_kind == kind
         if not sel.any():
@@ -43,6 +45,7 @@ def _draw_edges(ax, graph, kinds, art3d):
 
 
 def _draw_nodes(ax, graph, kinds, legend=True):
+    """Draw every node of the given types as dots."""
     for kind in kinds:
         ids = graph.node_ids(kind)
         if not len(ids):
@@ -55,11 +58,8 @@ def _draw_nodes(ax, graph, kinds, legend=True):
 
 
 def _style_axes(ax, graph, title, aspect=None, pad=0.5):
-    """Fit the axes to the drawn nodes. `aspect` defaults to the data's own
-    proportions (with a floor, so a nearly-planar subgraph does not collapse to
-    a line) rather than a fixed cube -- one climbing-fiber territory occupies a
-    narrow radial wedge, and forcing that into a cube renders it as a diagonal
-    streak."""
+    """Fit the 3D axes around the nodes and hide ticks and grid. By default the
+    box keeps the data's own proportions."""
     p = graph.position
     lo, hi = p.min(axis=0) - pad, p.max(axis=0) + pad
     ax.set_xlim(lo[0], hi[0]); ax.set_ylim(lo[1], hi[1]); ax.set_zlim(lo[2], hi[2])
@@ -76,21 +76,17 @@ def _style_axes(ax, graph, title, aspect=None, pad=0.5):
 
 
 def _subgraph_local_frame(graph, group):
-    """One climbing-fiber territory's nodes and the edges among them, with
-    positions re-projected onto that territory's own frame: x becomes the
-    tangential offset within it, y is flattened, z stays the anatomical height.
+    """The part of the graph with group == `group` (climbing fibre g's PFs and
+    PKJ, plus DCN cell g and olive cell g), with positions rotated so it can be
+    seen side-on: x = position along the ring, y = 0, z = layer height.
 
-    `group` selects PF and PKJ by climbing fiber and DCN/IO by index, so this is
-    territory `g` plus nuclear cell `g` and olivary cell `g` -- one representative
-    path around the loop, not a separable module. The circuit has no separable
-    modules: the nuclear cells that inhibit an olivary cell are driven by Purkinje
-    cells from several territories, which is exactly the closed-loop violation
-    quantified in the README."""
+    This is one example path around the loop for drawing, not a separate
+    sub-circuit; the real territories share DCN cells."""
     keep = np.flatnonzero(graph.group == group)
     mask = np.isin(graph.edge_src, keep) & np.isin(graph.edge_dst, keep)
     n_groups = int(graph.meta.get("n_io", graph.group.max() + 1))
     theta = 2.0 * np.pi * group / max(n_groups, 1)
-    tangential = np.array([-np.sin(theta), np.cos(theta)])          # unit vector along the group's spread
+    tangential = np.array([-np.sin(theta), np.cos(theta)])          # direction along the ring at this group
     xy = graph.position[keep, :2]
     local = np.stack([xy @ tangential, np.zeros(len(keep)), graph.position[keep, 2]], axis=1)
     return type(graph)(kind=graph.kind[keep], group=graph.group[keep], index=graph.index[keep],
@@ -102,16 +98,8 @@ def _subgraph_local_frame(graph, group):
 
 
 def plot_network_3d(graph, path, title="Network wiring", elev=18, azim=-62):
-    """Three views of the same wired network: the whole thing, one
-    climbing-fiber territory's path around the loop, and the olive's
-    gap-junction web on its own.
-
-    Layers run bottom-to-top in the order signals traverse the loop back to the
-    olive -- IO at the base, then DCN, then the Purkinje layer, then the
-    parallel fibers -- and territories fan out radially, so one path around the
-    loop reads as a vertical column and the electrical coupling reads as the
-    horizontal web underneath everything.
-    """
+    """Save a three-panel 3D figure: the whole network, one climbing fibre's
+    path around the loop, and the olive's gap junctions on their own."""
     plt = _mpl()
     from mpl_toolkits.mplot3d import art3d
 
@@ -126,11 +114,7 @@ def plot_network_3d(graph, path, title="Network wiring", elev=18, azim=-62):
     ax.view_init(elev=elev, azim=azim)
     ax.legend(loc="upper left", fontsize=7, framealpha=0.9)
 
-    # --- panel 2: one territory, redrawn in its own local frame so the loop is legible ---
-    # In the global layout the layers sit at increasing radius, so a single territory is a diagonal
-    # wedge -- fine in panel 1, where the cone shows every territory converging on the olive, but
-    # it renders one of them as a streak. Re-projecting onto (tangential offset, 0, height) turns
-    # it into the vertical column the pathway actually is.
+    # --- panel 2: climbing fibre 0's path around the loop, seen side-on ---
     ax2 = fig.add_subplot(1, 3, 2, projection="3d")
     sub = _subgraph_local_frame(graph, group=0)
     _draw_edges(ax2, sub, ("pf_pkj", "io_pkj", "pkj_dcn", "dcn_io"), art3d)
@@ -138,7 +122,7 @@ def plot_network_3d(graph, path, title="Network wiring", elev=18, azim=-62):
     _style_axes(ax2, sub, "one climbing-fiber territory\nPF $\\to$ PKJ $\\dashv$ DCN $\\dashv$ IO $\\to$ CF back to PKJ",
                  aspect=(0.62, 0.18, 1.0))
     ax2.view_init(elev=6, azim=-90)
-    x_label = sub.position[:, 0].min() - 0.35
+    x_label = sub.position[:, 0].min() - 0.35                       # put layer names to the left
     for kind, name in (("PF", "PF"), ("PKJ", "PKJ"), ("DCN", "DCN"), ("IO", "IO")):
         ids = sub.node_ids(kind)
         ax2.text(x_label, 0.0, float(sub.position[ids, 2].mean()), name,
@@ -148,16 +132,13 @@ def plot_network_3d(graph, path, title="Network wiring", elev=18, azim=-62):
     ax3 = fig.add_subplot(1, 3, 3, projection="3d")
     io_ids = graph.node_ids("IO")
     gap = graph.edge_kind == "io_io"
-    if gap.any():
+    if gap.any():                                                    # thicker line = stronger junction
         segs = np.stack([graph.position[graph.edge_src[gap]], graph.position[graph.edge_dst[gap]]], axis=1)
         widths = 1.0 + 6.0 * graph.edge_weight[gap] / max(graph.edge_weight[gap].max(), 1e-12)
         ax3.add_collection3d(art3d.Line3DCollection(segs, colors=EDGE_STYLE["io_io"]["color"],
                                                      linewidths=widths, alpha=0.85))
     p = graph.position[io_ids]
-    # Marker and label density have to follow n_io. At a handful of cells a fat marker reads well
-    # and every cell can be numbered; at the shipped 40 the same marker is wider than the spacing
-    # between neighbours, which hides exactly the short local chords a nearest_k topology is made
-    # of -- the panel would then look like an unconnected ring.
+    # Smaller dots and fewer labels when there are many olive cells, so the junctions stay visible.
     n_io = len(io_ids)
     marker = float(np.clip(2600.0 / max(n_io, 1), 45.0, 260.0))
     ax3.scatter(p[:, 0], p[:, 1], p[:, 2], s=marker, c=NODE_STYLE["IO"]["color"],
@@ -184,19 +165,15 @@ def plot_network_3d(graph, path, title="Network wiring", elev=18, azim=-62):
 
 
 def plot_connectivity_matrix(graph, path, title="Connectivity matrix"):
-    """The adjacency matrix the graph induces, at three zoom levels.
-
-    Nodes are ordered PF, PKJ, DCN, IO, so each projection of the circuit is one
-    off-diagonal block and the whole matrix reads as the pathway. Excitatory
-    entries are positive (blue), inhibitory negative (red); the gap-junction
-    block is symmetric and signless, so it gets its own panel."""
+    """Save the connection matrix as a three-panel heat map: all chemical
+    synapses, the same without PFs, and the gap junctions alone.
+    Rows are presynaptic, columns postsynaptic. In the first two panels
+    excitatory connections are positive and inhibitory ones negative."""
     plt = _mpl()
     import matplotlib.colors as mcolors
 
-    # Chemical synapses only, normalized per projection. Normalized because the four projections carry
-    # different units, so one shared scale would render the whole PKJ->DCN block (weights ~0.008) as blank
-    # next to the CF block (~1.0). Chemical-only because a gap junction has no sign, and drawing it on a
-    # signed excitatory/inhibitory scale would colour it as though it were excitatory; it gets panel 3.
+    # Chemical synapses only, each type scaled to its own maximum (they are in different units).
+    # Gap junctions have no sign, so they get their own panel.
     CHEMICAL = ("pf_pkj", "io_pkj", "pkj_dcn", "dcn_io")
     a = graph.adjacency_matrix(signed=True, kinds=CHEMICAL, normalize_per_kind=True)
     blocks = graph.kind_blocks()
@@ -204,6 +181,7 @@ def plot_connectivity_matrix(graph, path, title="Connectivity matrix"):
                               gridspec_kw={"width_ratios": [1.25, 1.25, 0.9]})
 
     def draw(ax, m, labels, sub_title, tick_every=None):
+        """Draw matrix m as a heat map with lines between cell types."""
         scale = np.abs(m).max() or 1.0
         norm = mcolors.TwoSlopeNorm(vmin=-scale, vcenter=0.0, vmax=scale)
         im = ax.imshow(m, cmap="RdBu_r", norm=norm, interpolation="nearest", aspect="auto")
@@ -211,8 +189,7 @@ def plot_connectivity_matrix(graph, path, title="Connectivity matrix"):
             for edge in (start, stop):
                 ax.axhline(edge - 0.5, color="black", linewidth=0.7)
                 ax.axvline(edge - 0.5, color="black", linewidth=0.7)
-        # Only label blocks wide enough to hold a label: PF is 85% of the axis, so DCN and IO
-        # would otherwise print on top of each other at the far edge.
+        # Only label cell types that take up enough of the axis to fit a label.
         n = m.shape[0]
         keep = [(k, s, e) for k, s, e in labels if (e - s) / n > 0.06]
         ax.set_xticks([(s + e) / 2.0 - 0.5 for _, s, e in keep])
@@ -228,7 +205,7 @@ def plot_connectivity_matrix(graph, path, title="Connectivity matrix"):
     draw(axes[0], a, blocks, f"chemical synapses: {graph.n_nodes} x {graph.n_nodes}, {n_chem} edges\n"
                               "(PF fills 85% of the axis; see the next panel for the rest)")
 
-    # --- panel 2: drop the PF block, which is 85% of the nodes and one diagonal stripe ---
+    # --- panel 2: everything except the PFs (which take up most of panel 1) ---
     start = next(s for k, s, _ in blocks if k == "PKJ")
     sub = a[start:, start:]
     sub_blocks = [(k, s - start, e - start) for k, s, e in blocks if k != "PF"]

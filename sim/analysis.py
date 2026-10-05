@@ -1,29 +1,34 @@
-"""Metrics and plotting for a SimLog.
+"""Turning a SimLog into numbers and figures.
 
-Every rate here is counted from the recorded spike trains rather than read off a
-smoothed trace, so "1.02 Hz" means 61 climbing-fiber events in 60 seconds and
-not the current value of a low-pass filter.
+run.py uses five things from this file:
 
-`summarize` is the one entry point that matters: it returns the dict of scalars
-every experiment and every sweep sidecar reports a run on. Everything else here
-is either one of those scalars in isolation or a figure.
+  summarize()            the numbers printed at the end of a run
+  plot_rasters()         spike rasters for all four cell types   -> rasters.png
+  plot_weights()         PF->PKJ weights over time               -> weights.png
+  plot_voltage_traces()  membrane voltages at the end of the run -> voltages.png
+  plot_io_state()        olive voltage and calcium               -> io_state.png
+
+Everything else here is a helper those use, or a plot run.py does not call.
+
+All firing rates are counted directly from the recorded spikes: number of
+spikes divided by the length of the window.
 """
 import numpy as np
 
-GROUP_CMAP = "tab10"          # shared across every raster and trace panel, so a colour means the same
-                              # cell group in all of them: climbing-fiber territory for PF and PKJ,
-                              # the cell's own index for DCN and IO
+GROUP_CMAP = "tab10"          # colour scheme for every plot. PF and PKJ are coloured by their climbing
+                              # fibre; DCN and IO by their own index.
 
 
 def _mpl():
+    """Import matplotlib set up to save files without a display."""
     import matplotlib
-    matplotlib.use("Agg")                                     # headless backend, no display needed
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     return plt
 
 
 def _window(log, window_s=None):
-    """(t_start_ms, t_end_ms) for the last `window_s` seconds of a run."""
+    """(start, end) in ms of the last window_s seconds of the run (or the whole run if None)."""
     t_end = float(log.duration_ms)
     if window_s is None:
         return 0.0, t_end
@@ -33,7 +38,7 @@ def _window(log, window_s=None):
 # --- metrics ---------------------------------------------------------------
 
 def spike_rate_hz(trains, t_start_ms=None, t_end_ms=None):
-    """Mean firing rate (Hz) per cell over a window, as an array."""
+    """Firing rate of each cell (Hz) between t_start_ms and t_end_ms: spikes / window length."""
     rates = []
     for s in trains:
         s = np.asarray(s, dtype=float)
@@ -46,9 +51,9 @@ def spike_rate_hz(trains, t_start_ms=None, t_end_ms=None):
 
 
 def isi_stats(trains):
-    """(mean ISI ms, CV) per cell. CV ~ 0 is a clock, CV ~ 1 is Poisson. The
-    conductance IO lands in between: its spiking is gated by the subthreshold
-    oscillation, so ISIs cluster near multiples of the oscillation period."""
+    """For each cell, the mean time between spikes (ISI, ms) and how variable
+    it is (CV = std / mean). CV near 0 = regular like a clock; near 1 = random.
+    Cells with fewer than 3 spikes get nan."""
     means, cvs = [], []
     for s in trains:
         s = np.asarray(s, dtype=float)
@@ -60,12 +65,11 @@ def isi_stats(trains):
 
 
 def weight_drift_slope(log, group=None):
-    """Linear drift of the mean PF->PKJ weight, in weight units per second.
+    """Slope of a straight line fitted to the mean weight over time (weight
+    units per second). Near 0 means the weights have stopped changing.
 
-    The headline H1 number: at equilibrium it should be ~0. Fitted over the
-    WHOLE logged run, so it only means "settled" on a run long enough to have
-    settled -- the weights take a few hundred seconds to reach equilibrium from
-    w_init, so read this off 300 s or more (see the README's settling result)."""
+    The fit covers the whole run, including the early approach to equilibrium,
+    so it only means something on runs of 300 s or more."""
     t_s = log.t_ms / 1000.0
     w = log.mean_weight.mean(axis=1) if group is None else log.mean_weight[:, group]
     slope, _ = np.polyfit(t_s, w, 1)
@@ -73,47 +77,49 @@ def weight_drift_slope(log, group=None):
 
 
 def is_saturated(log, group=None, tol=0.02, w_min=0.0, w_max=1.0, tail_frac=0.2):
-    """True if the weights have pinned against a clip bound over the last
-    tail_frac of the run. A saturated run is not an equilibrium -- the balance
-    point is outside the reachable range -- so every reported result checks it."""
+    """True if, over the last tail_frac of the run, the mean weight is stuck at
+    (within tol of) w_min or w_max. A run stuck at a limit has not found an
+    equilibrium: the weights wanted to go further but were clipped."""
     w = log.mean_weight.mean(axis=1) if group is None else log.mean_weight[:, group]
     tail = w[int(len(w) * (1 - tail_frac)):]
     return bool(tail.mean() <= w_min + tol or tail.mean() >= w_max - tol)
 
 
 def predicted_ltd_ltp_ratio(ltd_window_ms, equilibrium_interval_ms=1000.0):
-    """H2's analytical prediction, inverted. At equilibrium each synapse gets one
-    LTD event per CF interval and LTP on every other spike, so zero net drift
-    needs delta_minus/delta_plus = (interval - window) / window. The forward form
-    -- rate = 1000 / (window * (1 + ratio)) -- is what the sweep checks against."""
+    """The delta_minus/delta_plus ratio that would make the loop settle at a
+    given CF interval. The inverse of the formula run.py uses for its
+    prediction. Not called by run.py."""
     return (equilibrium_interval_ms - ltd_window_ms) / ltd_window_ms
 
 
 def summarize(log, tail_frac=0.5):
-    """One dict of the numbers a run is judged on."""
+    """The numbers printed at the end of a run, as a dict.
+
+    Rates and ISI CV use only the last tail_frac (default: second half) of the
+    run, after the weights have mostly settled."""
     t_end = float(log.duration_ms)
-    lo = t_end * (1.0 - tail_frac)
+    lo = t_end * (1.0 - tail_frac)                            # start of the analysis window
     io_r = spike_rate_hz(log.io_spikes, lo, t_end)
     _, io_cv = isi_stats([s[s >= lo] for s in log.io_spikes])
-    # A cell with fewer than 3 spikes in the window has no defined CV; if that is every cell
-    # (a very short run, or one that silenced the olive) report nan rather than warn on an empty slice.
+    # Average the CV over cells that have one; if none do (e.g. a very short run), report nan.
     mean_cv = float(np.nanmean(io_cv)) if np.any(np.isfinite(io_cv)) else float("nan")
     return {
         "pkj_rate_hz": float(spike_rate_hz(log.pkj_spikes, lo, t_end).mean()),
         "dcn_rate_hz": float(spike_rate_hz(log.dcn_spikes, lo, t_end).mean()),
         "io_rate_hz": float(io_r.mean()),
-        "io_rate_per_cell": io_r,
+        "io_rate_per_cell": io_r,                             # one rate per olive cell
         "io_isi_cv": mean_cv,
-        "mean_weight": float(log.mean_weight[-1].mean()),
+        "mean_weight": float(log.mean_weight[-1].mean()),     # at the last sample
         "weight_drift_slope": weight_drift_slope(log),
         "weight_saturated": is_saturated(log),
-        "cross_synapse_std": float(log.final_weights.std()),
+        "cross_synapse_std": float(log.final_weights.std()),  # spread of all 160,000 final weights
     }
 
 
 # --- rasters ---------------------------------------------------------------
 
 def _raster_panel(ax, trains, group_of_cell, n_groups, t0, t1, label, plt, markersize=1.2):
+    """Draw one raster: a row per cell, a tick per spike, coloured by group."""
     cmap = plt.get_cmap(GROUP_CMAP)
     for i, s in enumerate(trains):
         s = np.asarray(s, dtype=float)
@@ -129,16 +135,13 @@ def _raster_panel(ax, trains, group_of_cell, n_groups, t0, t1, label, plt, marke
 
 
 def plot_rasters(log, path, window_s=10.0, title="Network rasters"):
-    """PF / PKJ / DCN / IO spike rasters on a shared time axis. Restricted to the
-    last `window_s` seconds: at the default scale a whole run is well over a
-    million spikes, which renders as a solid block."""
+    """Spike rasters for PF, PKJ, DCN and IO, stacked on one time axis.
+    Shows only the last window_s seconds; a whole run would be a solid block."""
     plt = _mpl()
     t0, t1 = _window(log, window_s)
     n_groups = int(log.meta.get("n_io", 1))
 
-    # PF and PKJ are coloured by the climbing fiber that owns them -- the unit plasticity
-    # actually resolves against. Nuclear cells get a colour each instead: PKJ->DCN overlaps
-    # across territories, so a nuclear cell belongs to no single climbing fiber.
+    # Colour PF and PKJ by their climbing fibre. Each recorded PF's colour comes from the PKJ it belongs to.
     io_of_pkj = log.io_of_pkj if log.io_of_pkj is not None else log.group_of_pkj
     pf_group = io_of_pkj[log.pf_recorded[:, 0]] if log.pf_recorded is not None else None
     fig, axes = plt.subplots(4, 1, figsize=(13, 10), sharex=True,
@@ -163,11 +166,9 @@ def plot_rasters(log, path, window_s=10.0, title="Network rasters"):
 # --- membrane potentials ---------------------------------------------------
 
 def plot_voltage_traces(log, path, n_pkj_shown=6, n_dcn_shown=4, title="Membrane potentials"):
-    """One panel per cell type over the high-resolution trace window, plus the
-    DCN GABA conductance the IO is actually seeing. PKJ/DCN traces have their
-    spikes painted at v_peak (see sim/simulate.py) -- an integrate-and-fire cell
-    resets rather than producing an upstroke of its own, so the raw trace would
-    be a sawtooth."""
+    """Voltages over the last trace_window_s seconds, four panels:
+    every IO cell, a few PKJ, a few DCN, and the DCN inhibition each IO receives.
+    Traces are stacked with a vertical offset so they don't overlap."""
     plt = _mpl()
     t_s = log.trace_t_ms / 1000.0
     cmap = plt.get_cmap(GROUP_CMAP)
@@ -176,13 +177,15 @@ def plot_voltage_traces(log, path, n_pkj_shown=6, n_dcn_shown=4, title="Membrane
     fig, axes = plt.subplots(4, 1, figsize=(13, 11), sharex=True,
                               gridspec_kw={"height_ratios": [1.3, 1.0, 1.0, 0.8]})
 
-    for g in range(n_io):                                              # IO membrane potential, offset per cell
+    # Panel 1: each olive cell, shifted up 90 mV from the one before.
+    for g in range(n_io):
         axes[0].plot(t_s, log.trace_io_v[:, g] + g * 90.0, color=cmap(g % 10), linewidth=0.8,
                       label=f"IO {g}" if g < 10 else None)
     axes[0].set_ylabel("IO $V_m$ (mV)\n+90 mV offset per cell", fontsize=9)
     axes[0].legend(loc="upper right", fontsize=7, ncol=min(n_io, 8))
     axes[0].set_title(f"{title}  --  final {t_s[-1] - t_s[0]:.1f} s")
 
+    # Panels 2 and 3: an evenly spaced handful of PKJ and DCN cells.
     pkj_idx = np.linspace(0, log.trace_pkj_v.shape[1] - 1, min(n_pkj_shown, log.trace_pkj_v.shape[1])).astype(int)
     for n, i in enumerate(pkj_idx):
         axes[1].plot(t_s, log.trace_pkj_v[:, i] + n * 75.0, linewidth=0.6,
@@ -196,6 +199,7 @@ def plot_voltage_traces(log, path, n_pkj_shown=6, n_dcn_shown=4, title="Membrane
                       color=cmap(int(log.group_of_dcn[i]) % 10))
     axes[2].set_ylabel(f"DCN $V_m$ (mV)\n{len(dcn_idx)} of {log.trace_dcn_v.shape[1]}", fontsize=9)
 
+    # Panel 4: DCN -> IO inhibitory conductance, one line per olive cell.
     for g in range(n_io):
         axes[3].plot(t_s, log.trace_io_gaba[:, g], color=cmap(g % 10), linewidth=0.7)
     axes[3].set_ylabel("DCN$\\to$IO $g_{GABA}$\n(mS/cm$^2$)", fontsize=9)
@@ -209,8 +213,8 @@ def plot_voltage_traces(log, path, n_pkj_shown=6, n_dcn_shown=4, title="Membrane
 
 
 def plot_io_state(log, path, title="IO membrane potential and calcium"):
-    """IO V and [Ca]i together -- the Ca2+ spike and the transient that gates
-    I_KCa, which is what paces the next one."""
+    """Olive voltage (top) and calcium (bottom, log scale) over the last
+    trace_window_s seconds. Each calcium spike shows as a jump in both."""
     plt = _mpl()
     t_s = log.trace_t_ms / 1000.0
     cmap = plt.get_cmap(GROUP_CMAP)
@@ -232,10 +236,9 @@ def plot_io_state(log, path, title="IO membrane potential and calcium"):
 # --- weights ---------------------------------------------------------------
 
 def plot_weights(log, path, title="PF->PKJ weights"):
-    """Top: mean weight per climbing-fiber territory, plus the network mean.
-    Bottom: the individually tracked synapses against that mean -- the spread
-    between them is the random walk H3's null window is meant to slow, and it is
-    invisible in the mean, which averages it away over 160,000 synapses."""
+    """Top: mean weight for each climbing fibre's group of PKJ, plus the overall
+    mean (black). Bottom: the individually tracked synapses. They wander much
+    more than the mean does, because the mean averages over 160,000 synapses."""
     plt = _mpl()
     t_s = log.t_ms / 1000.0
     cmap = plt.get_cmap(GROUP_CMAP)
@@ -265,7 +268,7 @@ def plot_weights(log, path, title="PF->PKJ weights"):
 
 
 def plot_individual_and_mean_weights(log, title, path, group=0):
-    """Single-panel individual-vs-mean weight plot, used by the H2/H3 sweeps."""
+    """Individual synapses and the mean of one group in a single panel. Not called by run.py."""
     plt = _mpl()
     sample = log.sample_weights
     if sample is None or sample.size == 0:
@@ -286,9 +289,10 @@ def plot_individual_and_mean_weights(log, title, path, group=0):
     plt.close(fig)
 
 
-# --- curves used by the single-cell / sweep experiments --------------------
+# --- plots for experiments run.py doesn't do (parameter sweeps, single olive cells) ---
 
 def plot_ratio_sweep(ratios, drift_slopes, predicted_ratio, title, path):
+    """Weight drift against the delta_minus/delta_plus ratio, with the predicted zero point."""
     plt = _mpl()
     fig, ax = plt.subplots(figsize=(7, 5))
     ax.plot(ratios, drift_slopes, "o-", color="tab:blue", label="measured drift slope")
@@ -305,11 +309,8 @@ def plot_ratio_sweep(ratios, drift_slopes, predicted_ratio, title, path):
 
 
 def plot_io_membrane(traces, title, path, v_spike_mv=None, cf_times_ms=None):
-    """Membrane potential and [Ca2+]i for one or more single-cell protocols.
-
-    `traces` is a list of (label, t_ms, v_mv, ca_um) tuples so several
-    conditions can be overlaid. Sample at 1 ms or finer -- coarser aliases the
-    Ca2+ spike badly."""
+    """Voltage and calcium of a single olive cell, for one or more conditions.
+    `traces` is a list of (label, t_ms, v_mv, ca_um)."""
     plt = _mpl()
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
     cmap = plt.get_cmap("tab10")
@@ -337,16 +338,8 @@ def plot_io_membrane(traces, title, path, v_spike_mv=None, cf_times_ms=None):
 
 
 def plot_io_transfer_curve(curves, title, path, operating_point=None):
-    """CF rate as a function of the DCN GABA_A conductance on IO -- the loop's
-    negative-feedback limb, which must be monotone decreasing for H1 to hold.
-
-    `curves` is a list of (label, g_gaba, rate_hz), so the constant-conductance
-    curve and the spike-driven one can be shown together. They are not the same
-    curve, and the difference is the point: held constant, the olive's response
-    to inhibition is nearly a cliff; delivered as real synaptic events the
-    conductance fluctuates, the cell fires in the troughs, and the cliff becomes
-    a gentle slope. The closed loop rides the second curve, not the first, so
-    the operating point is marked against that one."""
+    """Olive firing rate against the amount of DCN inhibition: how the olive
+    responds to the feedback. `curves` is a list of (label, g_gaba, rate_hz)."""
     plt = _mpl()
     fig, ax = plt.subplots(figsize=(8, 5))
     styles = [("o-", "tab:blue"), ("s-", "tab:purple"), ("^-", "tab:brown")]

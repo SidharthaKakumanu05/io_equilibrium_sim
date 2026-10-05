@@ -1,18 +1,28 @@
-"""All simulation parameters, defaults, and units."""
-from dataclasses import dataclass, field          # config is a plain dataclass, no validation logic
-from typing import Optional                       # for fields that can be None (seed)
+"""Every parameter of the model, in one place.
+
+There are three parameter groups, one per class:
+
+  IOChannelParams  the inferior-olive cell's ion channels   (used by sim/io_channels.py)
+  LIFParams        the Purkinje and DCN cell membranes       (used by sim/neurons.py)
+  SimConfig        everything else: cell counts, wiring, synapse strengths,
+                   the learning rule, recording. It contains one IOChannelParams
+                   and two LIFParams (one for PKJ, one for DCN).
+
+run.py fills in a SimConfig from its settings block; anything run.py does not
+set keeps the default written here.
+
+Units used throughout: time in ms, voltage in mV, rates in Hz.
+"""
+from dataclasses import dataclass, field
+from typing import Optional
 
 
 class _StrictParams:
-    """Reject assignment to attributes that are not declared fields.
+    """Make a typo in a parameter name an error instead of a silent no-op.
 
-    These configs are plain dataclasses, so `cfg.duration_ms = 2000` -- a field
-    that does not exist, the real one being `duration_s` -- silently creates a
-    new attribute and changes nothing about the run. That is survivable when a
-    human is reading the output, and dangerous when a sweep sets parameters
-    programmatically: the run quietly uses the default while the sweep logs it
-    as a swept condition, and the resulting data looks fine but answers a
-    different question. Fail loudly instead."""
+    A plain dataclass lets you write `cfg.n_trial = 100` (the real field is
+    `n_trials`) and quietly creates a new, unused attribute. Every config
+    class below inherits from this one, so that mistake raises instead."""
 
     def __setattr__(self, name, value):
         if name not in getattr(type(self), "__dataclass_fields__", ()):
@@ -25,283 +35,200 @@ class _StrictParams:
 
 @dataclass
 class IOChannelParams(_StrictParams):
-    """Ionic parameters for the conductance-based IO neuron (sim/io_channels.py).
+    """Parameters of one inferior-olive (IO) cell.
 
-    Gating kinetics are hard-coded in io_channels.py from the published olivary
-    models (Schweighofer et al. 1999; De Gruijl et al. 2012) -- those are the
-    physiology and are not meant to be tuned. What lives here is what a
-    single-compartment reduction legitimately has to re-fit: maximal
-    conductances, reversal potentials, Ca2+ handling, and the noise level.
+    The IO cell is a single compartment with five ionic currents, and together
+    they make it oscillate and fire on its own at about 3 Hz with no input.
+    The voltage dependence of each channel is written into sim/io_channels.py
+    (it comes from published olive models). What can be tuned is here: how many
+    channels of each kind there are (maximal conductances), the reversal
+    potentials, calcium handling and noise.
 
     Units: V in mV, conductances in mS/cm^2, currents in uA/cm^2,
-    C_m in uF/cm^2, [Ca]i in uM, time in ms.
+    capacitance in uF/cm^2, [Ca]i in uM, time in ms.
     """
-    # --- maximal conductances (retuned for one compartment; see module docstring) ---
-    g_cal: float = 1.1        # low-threshold ("T-type") Ca2+ -- the rebound/oscillation driver
-    g_cah: float = 1.0        # high-threshold Ca2+ -- the [Ca]i source that recruits I_KCa
-    g_kca: float = 15.0       # Ca2+-activated K+ -- spike repolarization + the pacing AHP
-    g_h: float = 0.30         # h current -- depolarizing sag, sets oscillation frequency
-    g_leak: float = 0.06      # passive leak. On its own this is a 17 ms membrane time constant, but the cell
-                              # has no true resting state: the effective tau swings from ~0.2 ms during the
-                              # I_KCa-dominated AHP to ~7 ms just before a spike, as I_KCa deactivates.
+    # --- maximal conductances: how strong each current can get ---
+    g_cal: float = 1.1        # I_CaL, low-threshold Ca2+: produces the Ca2+ spike (the CF event)
+    g_cah: float = 1.0        # I_CaH, high-threshold Ca2+: lets Ca2+ into the cell during a spike
+    g_kca: float = 15.0       # I_KCa, Ca2+-activated K+: ends the spike and holds the cell down afterwards
+    g_h: float = 0.30         # I_h, the "sag" current: slowly pulls the cell back up, setting the rhythm
+    g_leak: float = 0.06      # passive leak
 
-    # --- reversal potentials ---
-    e_ca: float = 120.0       # Ca2+ (both Ca currents)
-    e_k: float = -75.0        # K+ (I_KCa)
-    e_h: float = -43.0        # mixed cation (I_h)
-    e_leak: float = -60.0     # leak. The source models use a depolarizing leak (+10 mV) balanced by somatic
-                              # currents this reduction drops; keeping it here made the LEAK the pacemaker and left
-                              # firing nearly unchanged when I_CaL was blocked. A conventional -60 mV leak restores
-                              # I_CaL as the current that actually generates the rhythm -- see
-                              # experiments/run_io_characterization.py's ablation panel, which checks exactly that.
-    e_gaba: float = -75.0     # Cl- (DCN's GABA_A synapse onto the olivary glomerulus)
+    # --- reversal potentials: the voltage each current pushes the cell toward ---
+    e_ca: float = 120.0       # Ca2+
+    e_k: float = -75.0        # K+
+    e_h: float = -43.0        # I_h (mixed cations)
+    e_leak: float = -60.0     # leak
+    e_gaba: float = -75.0     # GABA_A (Cl-), the inhibition arriving from the DCN
 
     c_m: float = 1.0          # membrane capacitance
-    i_app: float = 0.0        # constant applied current; 0 = the cell is driven by its own channels alone
+    i_app: float = 0.0        # constant injected current. 0: the cell runs on its own channels only
 
-    # --- Ca2+ handling: d[Ca]/dt = -ca_influx * I_CaH - ca_decay * [Ca] ---
-    ca_influx: float = 0.003  # uM per (uA/cm^2) of I_CaH per ms. Scaled down 1000x from the source models (and
-                              # kca_ca_scale up 1000x to match, leaving the dynamics identical) purely so [Ca]i reads
-                              # in real units: ~3 uM at the peak of a Ca2+ spike instead of a nominal ~13000.
-    ca_decay: float = 0.075   # first-order extrusion rate, 1/ms (tau ~ 13 ms)
+    # --- intracellular calcium: d[Ca]/dt = -ca_influx * I_CaH - ca_decay * [Ca] ---
+    ca_influx: float = 0.003  # how much [Ca]i rises per unit of I_CaH current
+    ca_decay: float = 0.075   # how fast Ca2+ is pumped out, 1/ms (time constant ~13 ms)
 
-    # --- I_KCa [Ca]-dependence (alpha_s = min(ca_scale*[Ca], alpha_max)) ---
+    # --- how [Ca]i opens I_KCa: opening rate = min(kca_ca_scale * [Ca], kca_alpha_max) ---
     kca_ca_scale: float = 0.02
     kca_alpha_max: float = 0.01
-    kca_beta: float = 0.015
+    kca_beta: float = 0.015   # closing rate
 
-    cal_tau_k_ms: float = 1.0  # I_CaL activation time constant (fast; near-instantaneous vs. the rest)
+    cal_tau_k_ms: float = 1.0  # how fast I_CaL activates (fast, ~1 ms)
 
-    # --- membrane noise: OU current standing in for synaptic bombardment / channel noise ---
-    noise_sigma: float = 0.0  # stationary SD of the noise current, uA/cm^2. ZERO by default: the cell's firing is
-                              # then generated entirely by its own ionic currents, with no applied current
-                              # (i_app = 0), no bias and no jitter -- it free-runs at 3.00 Hz on I_CaL/I_KCa/I_h
-                              # alone, and blocking I_CaL leaves it silent at -62.6 mV.
-                              # Set > 0 (2.0 gives ~3.5 mV of Vm jitter) to restore stochastic spike gating, which
-                              # smooths how steeply CF rate falls off with inhibition. See the README for what the
-                              # noiseless feedback limb looks like by comparison.
-    noise_tau_ms: float = 5.0 # OU correlation time
+    # --- optional membrane noise (an Ornstein-Uhlenbeck random current) ---
+    noise_sigma: float = 0.0  # size of the noise, uA/cm^2. 0 = off (default): the cell is fully
+                              # deterministic. 2.0 gives a few mV of voltage jitter.
+    noise_tau_ms: float = 5.0 # how quickly the noise changes
 
-    # --- CF event detection ---
-    v_spike_mv: float = -35.0       # upward crossing of this = one Ca2+ spike = one CF event
-    spike_refractory_ms: float = 15.0  # blocks counting a single Ca2+ spike as several CF events
+    # --- turning the voltage trace into CF events ---
+    v_spike_mv: float = -35.0       # V rising through this level counts as one CF event
+    spike_refractory_ms: float = 15.0  # ignore further crossings for this long, so one spike counts once
 
-    # --- initial conditions / integration ---
+    # --- starting state and integration ---
     v_init_mv: float = -60.0
-    ca_init_um: float = 0.0   # no basal Ca2+ influx or buffering is modeled, so [Ca]i decays to ~0 between
-                              # spikes; the model tracks the spike-evoked transient, which is what gates I_KCa.
-    sub_dt_ms: float = 0.1          # internal integration step; the outer loop still runs at cfg.dt_ms
-    display_tau_ms: float = 3000.0  # smoothing constant for the LOGGED rate estimate only
+    ca_init_um: float = 0.0
+    sub_dt_ms: float = 0.1          # the IO is integrated in 0.1 ms sub-steps inside each 1 ms main step
+    display_tau_ms: float = 3000.0  # smoothing for a rate readout that nothing in the model uses
 
 
 @dataclass
 class LIFParams(_StrictParams):
-    """Conductance-based leaky-integrate-and-fire parameters, shared shape for
-    PKJ and DCN (sim/neurons.py). Units: V in mV, time in ms, conductances in
-    1/ms (C_m is normalized to 1, so g_leak is just 1/tau_m and currents are in
-    mV/ms).
+    """Membrane parameters for a leaky integrate-and-fire cell (sim/neurons.py).
+    One copy is used for Purkinje cells and one for DCN cells.
 
-    None of these come from the white paper, which specifies population ratios
-    and plasticity constants but no membrane model. They are conventional
-    cortical-neuron values; what was actually fitted for this circuit is the
-    noise level and the synaptic gains in SimConfig.
+    The voltage relaxes toward rest. When it reaches threshold the cell spikes,
+    is reset, and is held there for a short refractory period.
+    Units: V in mV, time in ms.
     """
-    tau_m_ms: float = 20.0        # membrane time constant
+    tau_m_ms: float = 20.0        # membrane time constant: how quickly V relaxes
     v_th_mv: float = -50.0        # spike threshold
-    v_reset_mv: float = -65.0     # post-spike reset
-    e_leak_mv: float = -70.0      # leak reversal / resting potential with no input
-    t_ref_ms: float = 2.0         # absolute refractory period
-    v_peak_mv: float = 0.0        # NOT dynamics: the value a spike is drawn at in logged V traces, since an
-                                  # integrate-and-fire cell resets rather than producing an upstroke of its own.
-    noise_sigma_mv: float = 3.0   # SD of the OU membrane noise. See sim/neurons.py: this is what keeps the
-                                  # f-I curve smooth near rheobase, and so what keeps the loop's feedback graded.
+    v_reset_mv: float = -65.0     # V right after a spike
+    e_leak_mv: float = -70.0      # resting potential
+    t_ref_ms: float = 2.0         # refractory period after each spike
+    v_peak_mv: float = 0.0        # only used for drawing: spikes are plotted at this voltage
+    noise_sigma_mv: float = 3.0   # size of random voltage noise. It smooths the cell's response so
+                                  # its rate changes gradually with input rather than switching on/off.
 
 
 @dataclass
 class SimConfig(_StrictParams):
+    """Everything about one simulation run."""
+
     # --- timing ---
-    dt_ms: float = 1.0                # simulation timestep, milliseconds
-    duration_s: float = 60.0          # default run length if Simulation.run() isn't given one
+    dt_ms: float = 1.0                # main time step, ms
+    n_trials: int = 12                # number of trials (recorded run = n_trials x trial_ms)
+    trial_ms: float = 5000.0          # length of one trial, ms (CbmSim's trialTime)
 
-    # --- population sizes and connectivity (CbmSim's microzone; see sim/connectivity.py) ---
-    # Connection numbers are CbmSim's own, from src/cbm_state/connectivityparams.cpp; the three
-    # POPULATION sizes are those numbers scaled up 10x, while per-cell convergence is not scaled at
-    # all. The counts stay mutually consistent at this scale (320 PKJ x 3 targets = 960 = 80 DCN x
-    # 12 inputs) and they satisfy the white paper's N_IO << N_DCN << N_PKJ ordering (40 < 80 < 320)
-    # without needing any assumption the paper does not state.
-    n_io: int = 40                    # CbmSim num_io (4) x10
-    n_dcn: int = 80                   # CbmSim num_nc (8) x10
-    n_pkj_per_io: int = 8             # CbmSim num_p_io_from_io_to_pc -- PKJ per climbing fiber.
-                                      # n_pkj = n_io * n_pkj_per_io = 320 (CbmSim num_pc x10), and
-                                      # every Purkinje cell has exactly one climbing fiber.
-    n_pkj_per_dcn: int = 12           # CbmSim num_p_nc_from_pc_to_nc -- PKJ converging on one DCN
-    n_dcn_per_pkj: int = 3            # CbmSim num_p_pc_from_pc_to_nc -- DCN reached by one PKJ
-    n_dcn_per_io: int = 8             # CbmSim num_p_io_from_nc_to_io -- DCN converging on one IO.
-                                      # At CbmSim's own scale this equals n_dcn, i.e. connectNCtoIO is
-                                      # COMPLETE and every olivary cell sees identical inhibition. Held
-                                      # fixed while the populations grew 10x, it is now 8 of 80: each
-                                      # olivary cell reads its own topographic block of the nucleus.
-                                      # That is what stops the olive collapsing to one repeated cell.
-    n_pf_per_pkj: int = 500           # THE ONE SCALED-DOWN NUMBER. CbmSim gives each Purkinje cell
-                                      # 32,768 of a million shared granule cells; this MVP gives it a
-                                      # private pool of 500 Poisson fibers, which is the spec's own
-                                      # simplification (private pools keep each cell's coincidence
-                                      # detection independent, which is what H2 measures).
-    # --- circuit ablation ---
-    ablate_dcn_io: bool = False        # cut the nucleo-olivary projection: DCN spikes stop delivering GABA to the
-                                       # olive, so the loop is OPEN. Everything else (wiring, plasticity, CF->PKJ
-                                       # teaching, gap junctions) is untouched, which is what makes this a clean
-                                       # test of H1: if the ~1 Hz equilibrium is really produced by the feedback
-                                       # limb, removing only that limb should abolish it -- CF rate runs free to
-                                       # the cell's intrinsic rate and the weights should be driven to a bound
-                                       # instead of settling mid-range. If the rate survived the cut, the
-                                       # equilibrium would have been an artifact of the operating point rather
-                                       # than of feedback.
+    # --- cell counts and wiring (built in sim/connectivity.py) ---
+    # The counts follow CbmSim, the lab's reference cerebellum simulator, with the
+    # population sizes scaled up 10x. Defaults: 40 IO, 80 DCN, 320 PKJ.
+    n_io: int = 40                    # olive cells = climbing fibres
+    n_dcn: int = 80                   # deep nuclear cells
+    n_pkj_per_io: int = 8             # PKJ contacted by each climbing fibre. Total PKJ = n_io * n_pkj_per_io,
+                                      # and each PKJ has exactly one climbing fibre.
+    n_pkj_per_dcn: int = 12           # PKJ inhibiting each DCN cell
+    n_dcn_per_pkj: int = 3            # DCN cells each PKJ inhibits
+    n_dcn_per_io: int = 8             # DCN cells inhibiting each olive cell. Each olive cell gets its own
+                                      # block of 8 DCN, so different olive cells receive different inhibition.
+    n_pf_per_pkj: int = 500           # parallel fibres per PKJ. Each PKJ has its own private set, so
+                                      # 320 x 500 = 160,000 plastic synapses in total.
 
-    # --- olivary cell-to-cell heterogeneity ---
-    io_heterogeneity_cv: float = 0.0   # coefficient of variation of the per-cell maximal conductances
-                                       # g_cal / g_kca / g_h (see IOPopulation._draw_conductances).
-                                       # 0.0 = every olivary cell identical, which is CbmSim's assumption
-                                       # and which -- combined with a complete DCN->IO projection and
-                                       # noise_sigma = 0 -- made the cells integrate to bit-identical
-                                       # traces. Real olivary cells differ; this is that difference, drawn
-                                       # ONCE at construction from io_heterogeneity_seed, so the population
-                                       # is fixed and the cells stay deterministic. It is variability
-                                       # between cells, NOT noise within a cell: no applied drive, no bias,
-                                       # no jitter is added by setting it.
-    io_heterogeneity_seed: int = 0     # seeds the draw above, independently of `seed` and connectivity_seed,
-                                       # so the same cell population can be re-used across input seeds
+    # --- lesion ---
+    ablate_dcn_io: bool = False       # True cuts the DCN -> IO connection (the "open loop" control). DCN cells
+                                      # still fire, but their inhibition never reaches the olive. Nothing else
+                                      # changes, so any difference from the intact run is due to the feedback.
 
-    connectivity_seed: int = 0        # seeds the randomized half of the PKJ->DCN overlap
+    # --- making olive cells differ from each other ---
+    io_heterogeneity_cv: float = 0.0  # spread of g_cal, g_kca and g_h across olive cells (0.15 = 15%).
+                                      # 0 = all olive cells identical. The values are drawn once at the start
+                                      # and then fixed, so this is cell-to-cell variety, not noise over time.
+    io_heterogeneity_seed: int = 0    # random seed for that draw
 
-    # --- PF Poisson input ---
-    pf_rate_hz: float = 20.0          # per-PF-unit Poisson rate, Hz
+    connectivity_seed: int = 0        # random seed for the random part of the PKJ -> DCN wiring
 
-    # --- PKJ / DCN membrane models ---
+    # --- parallel-fibre input ---
+    pf_rate_hz: float = 20.0          # firing rate of every parallel fibre, Hz
+
+    # --- Purkinje and DCN membranes ---
     pkj: "LIFParams" = field(default_factory=lambda: LIFParams())
     dcn: "LIFParams" = field(default_factory=lambda: LIFParams())
 
-    # --- PKJ / DCN baseline rates (what each cell fires at with no synaptic input) ---
-    pkj_baseline_hz: float = 50.0     # PKJ tonic rate before PF excitation / CF pause
-    dcn_baseline_hz: float = 60.0     # DCN tonic rate BEFORE PKJ inhibition, so well above the ~15 Hz it actually
-                                      # runs at in the loop. Deliberately so: a LIF sitting only just above rheobase
-                                      # has a near-vertical f-I curve, and the nucleus could not both sit at 15 Hz and
-                                      # respond gradually to PKJ. Driving it high and inhibiting it back down puts the
-                                      # operating point on a gentler part of the curve, which is what the feedback limb
-                                      # needs. Lower is gentler: 60/70/80/90 Hz give DCN-vs-PKJ slopes of
-                                      # -0.66/-0.78/-0.87/-0.95 Hz per Hz, so the lowest was taken.
-                                      # See experiments/run_calibration.py stage 2.
+    # --- spontaneous rates (what each cell fires at with no synaptic input) ---
+    # sim/neurons.py works out the constant input current that produces each rate.
+    pkj_baseline_hz: float = 50.0     # PKJ
+    dcn_baseline_hz: float = 60.0     # DCN. Set high on purpose: PKJ inhibition brings it down to ~15 Hz in
+                                      # the running loop, a range where DCN responds smoothly to PKJ input.
 
-    # --- synaptic reversal potentials and time constants ---
-    e_exc_mv: float = 0.0             # AMPA-like (PF -> PKJ)
-    e_inh_mv: float = -75.0           # GABA_A / Cl- (PKJ -> DCN, and the CF pause on PKJ)
-    tau_pf_pkj_ms: float = 5.0        # PF -> PKJ excitatory conductance decay
-    tau_pkj_dcn_ms: float = 10.0      # PKJ -> DCN inhibitory conductance decay
-    tau_dcn_io_ms: float = 50.0       # DCN -> IO inhibitory conductance decay, matching the olivary glomerulus'
-                                      # slow GABA response. Deliberately NOT made longer: a longer tau averages the
-                                      # 8 converging DCN inputs into a steadier conductance, which pushes the IO back
-                                      # toward the near-vertical constant-conductance response it cannot regulate
-                                      # against. See dcn_io_gaba_gain for that curve and why it matters.
+    # --- synapses: reversal potentials and decay times ---
+    # Each synapse is a conductance that jumps up on every presynaptic spike and decays exponentially.
+    e_exc_mv: float = 0.0             # excitatory reversal (PF -> PKJ)
+    e_inh_mv: float = -75.0           # inhibitory reversal (PKJ -> DCN, and the post-complex-spike pause)
+    tau_pf_pkj_ms: float = 5.0        # PF -> PKJ decay time
+    tau_pkj_dcn_ms: float = 10.0      # PKJ -> DCN decay time
+    tau_dcn_io_ms: float = 50.0       # DCN -> IO decay time (slow GABA in the olive)
 
-    # --- IO conductance model (sim/io_channels.py IOPopulation) ---
-    io_channels: "IOChannelParams" = field(default_factory=lambda: IOChannelParams())  # ionic parameters; see above
+    # --- the olive cell model ---
+    io_channels: "IOChannelParams" = field(default_factory=lambda: IOChannelParams())
 
-    # --- IO-IO gap junctions (sim/io_coupling.py) ---
-    gap_g: float = 0.0143             # conductance of ONE gap junction, mS/cm^2. Set 0.0 to run the cells uncoupled.
-                                      # What matters physiologically is a cell's TOTAL coupling conductance --
-                                      # gap_g times its number of partners -- not gap_g alone. CbmSim couples its
-                                      # 4 olivary cells all-to-all (num_p_io_in_io_to_io = 3), giving 0.019 x 3 =
-                                      # 0.057, about 0.95x g_leak. At n_io = 40 all-to-all would mean 39 partners
-                                      # and ~12x leak, which is not a physiological regime and would clamp the
-                                      # whole olive to one potential; the topology is local instead (4 partners),
-                                      # and gap_g is set to 0.057 / 4 to hold that same 0.95x leak per cell.
-                                      # Re-scale this if you change n_io or the topology: run_gap_sweep.py shows
-                                      # the loop starts to degrade once the total passes roughly 2x leak.
-    gap_topology: str = "nearest_k"   # "all_to_all" (CbmSim's connectIOtoIO) | "ring" | "nearest_k"
-    gap_n_neighbors: int = 2          # neighbours per side under "nearest_k"; ignored by the other topologies
+    # --- gap junctions between olive cells (built in sim/io_coupling.py) ---
+    gap_g: float = 0.0143             # conductance of ONE junction, mS/cm^2. 0 = uncoupled.
+                                      # Each cell has 4 partners by default, so its total coupling is
+                                      # 4 x 0.0143 = 0.057, about the same as its leak (0.06).
+    gap_topology: str = "nearest_k"   # who is coupled to whom: "nearest_k" | "ring" | "all_to_all"
+                                      # (sim/io_coupling.py also has "small_world")
+    gap_n_neighbors: int = 2          # for "nearest_k": partners on each side of the ring
 
-    # --- coupling gains between populations ---
-    # All three are conductance increments per presynaptic event, and all three were fitted by
-    # experiments/run_calibration.py rather than guessed -- see its docstring for the targets.
+    # --- synaptic strengths (gains) ---
+    # Each gain is how much conductance one presynaptic spike adds. They were fitted so the loop
+    # runs at PKJ ~60 Hz, DCN ~15 Hz and IO ~1 Hz when the weights are at 0.5.
     #
-    # The two convergent gains are normalized by how many cells actually converge, against the counts
-    # they were fitted at (below). Without that, changing a population ratio would silently change the
-    # loop's operating point as well as its wiring, and every result would need re-fitting for every
-    # topology. sim/simulate.py applies the scaling.
-    pkj_dcn_fitted_at_n_pkj: int = 8      # pkj_dcn_gain was fitted with 8 PKJ converging on each DCN
-    dcn_io_fitted_at_n_dcn: int = 2       # dcn_io_gaba_gain was fitted with 2 DCN converging on each IO
-    pf_pkj_gain: float = 0.000137     # PKJ excitatory conductance (1/ms) added per unit of (weight * PF spike).
-                                      # Fitted so PKJ runs 50 Hz at weight 0 and 70 Hz at weight 1. It is the SPAN
-                                      # that matters: the loop has to be able to push the Purkinje rate in both
-                                      # directions from w_init = 0.5, or the weights would have nowhere to settle.
-    pkj_dcn_gain: float = 0.007717    # DCN inhibitory conductance (1/ms) added per presynaptic PKJ spike.
-                                      # Fitted so DCN sits at 15 Hz when the 12 PKJ converging on it (CbmSim's
-                                      # num_p_nc_from_pc_to_nc) fire at 60 Hz, i.e. at weight 0.5.
-                                      # Scaled by pkj_dcn_fitted_at_n_pkj / n_pkj_per_dcn in sim/simulate.py.
-    dcn_io_gaba_gain: float = 0.0974  # IO GABA_A conductance (mS/cm^2) added per presynaptic DCN spike. Fitted so the
-                                      # IO fires 1 Hz at DCN = 15 Hz, with CbmSim's 8 nuclear cells converging on each
-                                      # olivary cell. It has been re-fitted twice, and the sequence is informative:
-                                      # 0.68 (2 DCN converging, with membrane noise), 0.273 (2 DCN, noiseless), 0.0974
-                                      # (8 DCN, noiseless). Each step needs LESS inhibition per synapse, for the same
-                                      # underlying reason -- more converging cells, and less membrane noise, both make
-                                      # the conductance the cell sees steadier, and a steadier conductance suppresses
-                                      # the olive more effectively. Re-run experiments/run_calibration.py after
-                                      # changing either; it reads the live config, so it re-derives rather than going
-                                      # stale.
-                                      #
-                                      # WHY THIS IS A SPIKE-DRIVEN SYNAPSE AND NOT A SCALAR. With noise off and the
-                                      # conductance HELD CONSTANT, the olive fires 3.00 Hz at g = 0 and is silent at
-                                      # every g >= 0.10 mS/cm^2. There is no graded range at all -- steady inhibition
-                                      # either leaves the rhythm untouched or abolishes it, so a loop cannot regulate
-                                      # against it. Delivered as discrete DCN events the same means give a smooth
-                                      # monotone curve: 2.73 Hz at mean g = 0.029, 2.09 at 0.088, 1.05 at 0.147 (the
-                                      # loop's operating point), 0.21 at 0.207, 0.01 at 0.297. The cell escapes during
-                                      # the troughs of a conductance that swings around its mean, and the loop's
-                                      # entire negative-feedback limb is that fluctuation. Both curves are plotted on
-                                      # one axis by experiments/run_io_characterization.py.
-                                      #
-                                      # A corollary worth knowing before changing n_dcn_per_io or tau_dcn_io_ms:
-                                      # anything that makes the inhibition SMOOTHER (more converging cells, a longer
-                                      # tau) narrows the usable limb back toward that cliff. There is an upper bound
-                                      # on nucleo-olivary convergence beyond which the loop cannot regulate itself
-                                      # without some other noise source -- which is a real prediction of the model.
+    # The two convergent gains (PKJ->DCN and DCN->IO) are rescaled in sim/simulate.py by
+    # (count below / actual number of converging cells). That way, if you change how many cells
+    # converge, the TOTAL input each cell gets stays the same and the loop keeps its operating point.
+    pkj_dcn_fitted_at_n_pkj: int = 8      # pkj_dcn_gain is "per spike, when 8 PKJ converge"
+    dcn_io_fitted_at_n_dcn: int = 2       # dcn_io_gaba_gain is "per spike, when 2 DCN converge"
+    pf_pkj_gain: float = 0.000137     # PF -> PKJ, per (weight x PF spike). With it, PKJ fires 50 Hz when all
+                                      # weights are 0 and 70 Hz when all are 1, so learning can push the
+                                      # rate either way from the starting weight of 0.5.
+    pkj_dcn_gain: float = 0.007717    # PKJ -> DCN, per PKJ spike
+    dcn_io_gaba_gain: float = 0.0974  # DCN -> IO, per DCN spike (mS/cm^2).
+                                      # This inhibition is delivered spike by spike rather than as a smooth
+                                      # constant on purpose. A constant inhibition either leaves the olive
+                                      # firing at 3 Hz or silences it, with almost nothing in between.
+                                      # Spike-by-spike inhibition rises and falls, the olive fires in the
+                                      # dips, and its rate then falls smoothly as inhibition grows. That
+                                      # smooth fall is what the feedback loop needs to regulate the olive.
 
-    # --- CF -> PKJ inhibitory pause ---
-    cf_pause_g: float = 1.0           # inhibitory conductance (1/ms) switched on during the pause -- large enough
-                                      # to dominate g_leak and clamp the cell near e_inh_mv, i.e. a real pause
-    cf_pause_ms: float = 10.0         # pause duration after each CF event, ms
+    # --- what a CF event does to its Purkinje cells (sim/neurons.py, PKJPopulation) ---
+    cf_burst_spikes: int = 3          # complex spike: this many forced PKJ spikes. 0 = no complex spike
+    cf_burst_isi_ms: float = 2.0      # time between them
+    cf_pause_g: float = 1.0           # then a pause: a large conductance at e_inh_mv holding V down...
+    cf_pause_ms: float = 10.0         # ...for this long after the last complex-spike spike
 
-    # --- PF -> PKJ synaptic weights ---
-    w_init: float = 0.5               # initial weight, all synapses
-    w_min: float = 0.0                # lower clip bound
-    w_max: float = 1.0                # upper clip bound
+    # --- PF -> PKJ weights ---
+    w_init: float = 0.5               # starting weight of every synapse
+    w_min: float = 0.0                # weights are clipped to [w_min, w_max]
+    w_max: float = 1.0
 
-    # --- plasticity ---
-    ltd_window_ms: float = 100.0      # window after a PF spike in which a CF event causes LTD
-    null_window_ms: float = 0.0       # window after the LTD window with no weight change; 0 = 2-window mode
-    delta_plus: float = 0.001         # LTP increment
-    delta_minus: float = 0.009        # LTD decrement
+    # --- learning rule (sim/plasticity.py) ---
+    ltd_window_ms: float = 100.0      # CF within this long after a PF spike -> that synapse is weakened
+    null_window_ms: float = 0.0       # optional window after that with no change; 0 = off
+    delta_plus: float = 0.001         # LTP step
+    delta_minus: float = 0.009        # LTD step
 
-    # --- closed-loop connectivity ---
-    enforce_closed_loop: bool = True  # False rotates each olivary cell's block of the nucleus by a full block width,
-                                      # so it is inhibited by nuclear cells its own climbing fiber does not drive --
-                                      # the feedback is misrouted rather than removed. Needs n_dcn_per_io < n_dcn to
-                                      # mean anything (at CbmSim's complete projection there is nothing to rotate,
-                                      # and build_connectivity reports that in meta["loop"]). For removing the limb
-                                      # outright, see ablate_dcn_io above.
+    # --- wiring variant ---
+    enforce_closed_loop: bool = True  # False shifts each olive cell's block of DCN inputs by one block, so
+                                      # it is inhibited by DCN cells its own climbing fibre does not drive.
+                                      # The feedback is misrouted rather than removed (compare ablate_dcn_io).
 
-    # --- recording ---
-    record_every_ms: float = 10.0     # cadence for the slow traces (mean weight, tracked synapses)
-    trace_window_s: float = 3.0       # length of the high-resolution membrane-potential window, taken at the END
-                                      # of the run. V is sampled every dt there; sampling it at record_every_ms
-                                      # for the whole run would alias every spike and every Ca2+ spike away.
-    n_pf_recorded: int = 40           # PF units whose spike trains are kept for the raster. All 160,000 fibers
-                                      # (320 PKJ x 500) at 20 Hz would be ~190M spike times over the default 60 s
-                                      # run, for a raster no one could read.
-    n_tracked_synapses: int = 15      # individual PF->PKJ synapses logged alongside the mean weight
+    # --- what gets recorded ---
+    record_every_ms: float = 10.0     # how often the weights are sampled
+    trace_window_s: float = 3.0       # membrane voltages are recorded at every time step, but only for this
+                                      # many seconds at the very end of the run
+    n_pf_recorded: int = 40           # how many of the 160,000 PFs have their spikes saved (for the raster)
+    n_tracked_synapses: int = 15      # how many individual synapses have their weight saved over time
 
     # --- misc ---
-    seed: Optional[int] = None        # RNG seed. Seeds PF Poisson draws; the IO membrane noise, the PKJ/DCN
-                                      # membrane noise and the recording subsamples each draw from their own
-                                      # derived stream, so changing one never shifts the others.
-    burn_in_s: float = 8.0            # duration run before plasticity/logging start, to let the loop settle
+    seed: Optional[int] = None        # random seed. None = different every run. Separate random streams are
+                                      # derived from it for each use (see sim/simulate.py).
+    burn_in_s: float = 8.0            # run this long with learning and recording off before t = 0
